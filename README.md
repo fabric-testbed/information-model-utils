@@ -44,3 +44,5 @@ The utility is smart enough to try and discard components that don't need to
 be reflected in the information model (internal worker disks, iDrac or 
 disconnected ports etc)
 
+You can find your Ralph API token in your profile page in Ralph.
+

@@ -30,7 +30,7 @@ print(worker)
 
 ## End-user utilities
 
-###utilities/scan_worker.py
+### utilities/scan_worker.py
 
 Scans an individual worker node based on its FQDN and returns information about
 it and its components. 

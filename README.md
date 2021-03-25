@@ -7,8 +7,8 @@ information from various sources into FABRIC Information Models
 
 ## Utilities Library
 
-This libry use different sources to extract necessary information to build
-site and network models:
+This library uses different sources to extract necessary information to build
+site and network advertisement models for FABRIC control framework:
 - fimutil.ralph - uses Ralph inventory system REST API
 
 ### Ralph REST

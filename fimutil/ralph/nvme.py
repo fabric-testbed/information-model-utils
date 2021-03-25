@@ -7,10 +7,7 @@ class NVMeDrive(RalphAsset):
     """
     This class knows how to parse necessary worker fields in Ralph
     """
-    FIELD_MAP = {
-        "SN": "serial_number",
-        "Description": "model_name"
-    }
+    FIELD_MAP = '{SN: .serial_number, Description: .model_name}'
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         super().__init__(uri=uri, ralph=ralph)

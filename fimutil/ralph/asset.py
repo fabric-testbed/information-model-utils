@@ -2,13 +2,14 @@ from abc import ABC, abstractmethod
 from typing import List, Dict
 
 import json
+import pyjq
 from enum import Enum, auto
 
 from fimutil.ralph.ralph_uri import RalphURI
 
 
 class RalphAssetType(Enum):
-    Worker = auto()
+    Node = auto()
     NVMe = auto()
     GPU = auto()
     Ethernet = auto()
@@ -24,7 +25,7 @@ class RalphAsset(ABC):
     how to remap JSON responses from those URIs into needed
     fields.
     """
-    FIELD_MAP = dict()
+    FIELD_MAP = str()
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         self.uri = uri
@@ -41,38 +42,8 @@ class RalphAsset(ABC):
         self.populate_fields_from_obj(json_obj=self.raw_json_obj)
 
     def populate_fields_from_obj(self, *, json_obj):
-        """
-        Populate fields dictionary based on a json response
-        from API.
-        """
-        for k, v in self.fieldmap.items():
-            # each fieldmap value is a . separated path in dictionary
-            # if a value of a dictionary is a list, then '/[0-9]' refers
-            # to the list index
-            # hierarchy
 
-            level_dict = json_obj
-            for level in v.split('.'):
-                # e.g. results/0.sn
-                level_list = level.split('/')
-                level = level_list[0]
-                if len(level_list) == 2:
-                    level_index = int(level_list[1])
-                else:
-                    level_index = -1
-                if level_dict.get(level, None) is None:
-                    raise RalphJSONError(f'Unable to find entry for {level} in asset '
-                                         f'response for type {self.type} within {v} hierarchy')
-                if level_index < 0:
-                    level_dict = level_dict[level]
-                else:
-                    level_dict = level_dict[level][level_index]
-
-            level_val = level_dict  # this is now the value we sought
-            if not isinstance(level_val, str):
-                raise RalphJSONError(f'Expected to return string instead of object in asset'
-                                     f'response for type {self.type} within {v} hierarchy')
-            self.fields[k] = level_val
+        self.fields = pyjq.first(self.fieldmap, json_obj)
 
     def get_fields(self) -> Dict[str, str]:
         return self.fields.copy()
@@ -85,9 +56,9 @@ class RalphAsset(ABC):
 
     def __str__(self):
         ret = list()
-        ret.append('Worker: ' + json.dumps(self.fields))
+        ret.append(str(self.type) + ": " + json.dumps(self.fields))
         for n, comp in self.components.items():
-            ret.append('\t' + n + ": " + json.dumps(comp.fields))
+            ret.append('\t' + n + " " + str(comp))
         return "\n".join(ret)
 
 

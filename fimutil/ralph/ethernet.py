@@ -7,12 +7,7 @@ class Ethernet(RalphAsset):
     """
     This class knows how to parse necessary worker fields in Ralph
     """
-    FIELD_MAP = {
-        "MAC": "mac",
-        "Description": "model_name",
-        "Speed": "speed",
-        "Connection": "label"
-    }
+    FIELD_MAP = '{MAC: .mac, Description: .model_name, Speed: .speed, Connection: .label}'
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         super().__init__(uri=uri, ralph=ralph)

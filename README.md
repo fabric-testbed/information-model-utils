@@ -11,13 +11,17 @@ site and network models:
 
 ### Ralph REST
 Since Ralph presents information in the form of nested dictionaries, the library
-uses a trivial XPath-like syntax to map out properties it needs. For example,
-a model name of a server can be found as `results/0.model.category.name`, meaning
+uses a [PyJQ](https://pypi.org/project/pyjq/) to map the necessary properties. For example,
+a model name of a server can be found as `.results[0].model.category.name`, meaning
 'results' dictionary, then take the first element of the list (index 0), then
 follow dictionary hierarchy ['model']['category']['name']. It throws
-`RalphJSONError` if the indicated field cannot be found. 
+`RalphJSONError` if the indicated field cannot be found. Each class has its own
+map of fields that it can get from a JSON document. 
 
-It defines multiple classes of assets (all children of a base Asset class),
+When needed more REST calls are made to additional URLs found in the initial document to
+determine the details of specific resource assets.
+
+The library defines multiple classes of assets (all children of a base Asset class),
 each of which knows how to parse itself and its own possible subcomponents.
 It also defines a class that helps invoke Ralph REST API.
 Thus getting information about a single worker can be done as simple as
@@ -29,6 +33,18 @@ print(worker)
 ```
 
 ## End-user utilities
+
+## Installation
+
+Developed under Python 3.9. Using virtualenv, something like this should work:
+
+```
+$ mkvirtualenv -r requirements.txt fim-utils
+$ cd utilities/
+$ python scan_worker.py <options>
+```
+Note that to install PyJQ dependency  you need to have `automake` installed on your system. So
+`yum install automake` or `brew install automake` or similar. 
 
 ### utilities/scan_worker.py
 

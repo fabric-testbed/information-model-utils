@@ -1,3 +1,5 @@
+[![Requirements Status](https://requires.io/github/fabric-testbed/information-model-utils/requirements.svg?branch=main)](https://requires.io/github/fabric-testbed/information-model-utils/requirements/?branch=main)
+
 # Information Model Utilities
 
 There are a number of libraries and utilities in this repo that help convert 

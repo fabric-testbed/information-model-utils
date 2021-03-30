@@ -27,7 +27,7 @@ pkginfo==1.6.1
 pluggy==0.13.1
 py==1.10.0
 pycodestyle==2.6.0
-Pygments==2.7.3
+Pygments==2.7.4
 pyjq==2.5.1
 pyparsing==2.4.7
 pytest==6.2.1

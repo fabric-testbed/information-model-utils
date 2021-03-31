@@ -9,7 +9,7 @@ with open("requirements.txt", "r") as fh:
 setuptools.setup(
   name="fim_utils",
   version="0.11",
-  author="Ilya Baldin, Komal Thareja",
+  author="Ilya Baldin, Hussamudin Nasir",
   description="FABRIC Information Model Library Utilities",
   url="https://github.com/fabric-testbed/information-model-utils",
   long_description="FABRIC Information Model Library Utilities",

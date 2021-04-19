@@ -18,6 +18,7 @@ class NetAmARM:
         s = requests.Session()
         # headers = {'X-Subscribe': 'stream'}
         r = s.get(self.sr_pce_url, auth=HTTPDigestAuth(self.sr_pce_user, self.sr_pce_pass), stream=True)
+        print(r.status_code)
         if r.status_code != 200:
             raise NetAmARMSrPceError(f'Failed to retrieve SR-PCE topology from URL:{self.sr_pce_url}')
         json_topo = ''
@@ -25,10 +26,9 @@ class NetAmARM:
             if line:
                 str_line = line.decode("utf-8")
                 json_topo += str_line
-        if json_topo.startswith('{') and json_topo.find(
-                'Cisco-IOS-XR-infra-xtc-oper:pce/topology-nodes/topology-node') != -1:
-            return json_topo
-        raise NetAmARMSrPceError(f'Invalid JSON topology retrieved from SR-PCE from URL:{self.sr_pce_url}')
+        if json_topo.startswith('{') and json_topo.find('Cisco-IOS-XR-infra-xtc-oper:pce/topology-nodes/topology-node') == -1:
+            raise NetAmARMSrPceError(f'Invalid JSON topology retrieved from SR-PCE from URL:{self.sr_pce_url}')
+        return json_topo
 
 
 class NetAmARMSrPceError(Exception):

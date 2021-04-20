@@ -1,9 +1,4 @@
 import requests
-import json
-from jsonpath_ng import jsonpath
-from jsonpath_ng.ext import parse
-
-
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 

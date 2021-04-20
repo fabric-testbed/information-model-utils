@@ -48,3 +48,4 @@ webencodings==0.5.1
 wrapt==1.12.1
 zipp==3.4.0
 fim=0.26
+jsonpath_ng

@@ -1,11 +1,10 @@
 import unittest
 
-from fimutil.netam.netam_arm import NetAmARM
+from fimutil.netam.nso import NsoClient
 
 
 class NetAmTest(unittest.TestCase):
 
     def testNetAmComponents(self):
-        self.arm = NetAmARM(sr_pce_url="http://192.168.13.3:8080/topo/subscribe/txt",
-                            sr_pce_user="admin", sr_pce_pass="password")
-        json_topo = self.arm.get_topology_json()
+        self.nso = NsoClient(nso_url="https://192.168.11.246/restconf/data", nso_user="admin", nso_pass="password")
+        devs = self.nso.devices()

@@ -83,7 +83,7 @@ class NetworkARM:
                     if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
                         for ipv6_addr in port['ietf-ip:ipv6']['address']:
                             ipv6_addr_ip = ipv6_addr['ip']
-                            ipv6_addr_mask = ipv6_addr['netmask']
+                            ipv6_addr_prefix_len = ipv6_addr['prefix-length']
                             port_labs.set_fields(ipv6=ipv6_addr_ip)
                             # only take the first
                             break

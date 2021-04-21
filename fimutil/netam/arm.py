@@ -92,9 +92,15 @@ class NetworkARM:
                     port_sp_r = v_r['interface']
                     # add link
                     link_nid = f"link:local-{port_sp.node_id}:remote-{port_sp_r.node_id}"
-                    link = self.topology.add_link(name=f'{port_sp.node_id}-link', ltype=f.LinkType.L2Path, layer=f.Layer.L2,
+                    link = self.topology.add_link(name=f'{port_sp.node_id}-link', ltype=f.LinkType.L2Path,
+                                                  layer=f.Layer.L2,
                                                   interfaces=[port_sp, port_sp_r],
                                                   node_id=link_nid)
+
+    def delegate_topology(self, delegation: str) -> None:
+        self.topology.single_delegation(delegation_id=delegation,
+                                        label_pools=f.ARMPools(atype=f.DelegationType.LABEL),
+                                        capacity_pools=f.ARMPools(atype=f.DelegationType.CAPACITY))
 
     def write_topology(self, file_name: str) -> None:
         if not self.topology:
@@ -105,11 +111,3 @@ class NetworkARM:
 class NetAmArmError(Exception):
     def __init__(self, msg: str):
         super().__init__(f'NetAmArmError: {msg}')
-
-"""
-arm = NetworkARM(nso_url="https://192.168.11.246/restconf/data", nso_user="admin", nso_pass="password",
-                         sr_pce_url=None, sr_pce_user=None, sr_pce_pass=None)
-topo_model = "NetAM-TestAd"
-arm.build_topology(topo_model)
-arm.write_topology(file_name="/tmp/network-arm.graphml")
-"""

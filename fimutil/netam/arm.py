@@ -49,6 +49,7 @@ class NetworkARM:
             switch = self.topology.add_node(name=node_name, model=model_name, site=node_name + "-site",
                                             node_id=node_nid,
                                             capacities=f.Capacities().set_fields(unit=1),
+                                            labels=f.Labels().set_fields(ipv4=node['address']),
                                             ntype=f.NodeType.Switch)
             dp_sf = switch.add_switch_fabric(name=switch.name + '-sf', layer=f.Layer.L2,
                                              node_id=switch.node_id + '-sf')
@@ -58,20 +59,34 @@ class NetworkARM:
                 port_mac = port['phys-address']
                 port_nid = f"port+{node_name}:{port_name}:mac+{port_mac}"
                 speed_gbps = int(port['speed']) / 1000000000
+                # add capabilities
                 port_caps = f.Capacities()
                 port_caps.set_fields(bw=speed_gbps)
-                # VLAN tag labels ?
+                # add labels (vlan ??)
+                port_labs = f.Labels()
+                port_labs.set_fields(mac=port_mac)
                 sp = dp_sf.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
                                          node_id=port_nid,
-                                         capacities=port_caps)
+                                         capacities=port_caps,
+                                         labels=port_labs)
                 if port['ietf-ip:ipv4']:
                     if 'ietf-ip:ipv4' in port and 'address' in port['ietf-ip:ipv4']:
                         for ipv4_addr in port['ietf-ip:ipv4']['address']:
                             ipv4_addr_ip = ipv4_addr['ip']
                             ipv4_addr_mask = ipv4_addr['netmask']
+                            port_labs.set_fields(ipv4=ipv4_addr_ip)
                             port_ipv4net_map[port_nid] = {"ip": ipv4_addr_ip, "netmask": ipv4_addr_mask,
                                                           "interface": sp}
-
+                            # only take the first
+                            break
+                if port['ietf-ip:ipv6']:
+                    if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
+                        for ipv6_addr in port['ietf-ip:ipv6']['address']:
+                            ipv6_addr_ip = ipv6_addr['ip']
+                            ipv6_addr_mask = ipv6_addr['netmask']
+                            port_labs.set_fields(ipv6=ipv6_addr_ip)
+                            # only take the first
+                            break
         # add links
         # loop fetch interface (remove)
         for k in list(port_ipv4net_map):

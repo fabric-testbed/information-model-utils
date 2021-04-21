@@ -23,4 +23,5 @@ class NetAmTest(unittest.TestCase):
     def testBuildNetworkARM(self):
         topo_model = "NetAM-TestAd"
         self.arm.build_topology(topo_model)
+        self.arm.delegate_topology("primary")
         self.arm.write_topology(file_name="/tmp/network-arm.graphml")

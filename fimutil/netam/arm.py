@@ -65,10 +65,6 @@ class NetworkARM:
                 # add labels (vlan ??)
                 port_labs = f.Labels()
                 port_labs.set_fields(mac=port_mac)
-                sp = dp_sf.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
-                                         node_id=port_nid,
-                                         capacities=port_caps,
-                                         labels=port_labs)
                 if port['ietf-ip:ipv4']:
                     if 'ietf-ip:ipv4' in port and 'address' in port['ietf-ip:ipv4']:
                         for ipv4_addr in port['ietf-ip:ipv4']['address']:
@@ -87,6 +83,10 @@ class NetworkARM:
                             port_labs.set_fields(ipv6=ipv6_addr_ip)
                             # only take the first
                             break
+                sp = dp_sf.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
+                                         node_id=port_nid,
+                                         capacities=port_caps,
+                                         labels=port_labs)
         # add links
         # loop fetch interface (remove)
         for k in list(port_ipv4net_map):

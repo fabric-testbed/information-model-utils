@@ -43,9 +43,9 @@ toml==0.10.1
 tqdm==4.54.1
 typed-ast==1.4.1
 typing-extensions==3.7.4.3
-urllib3==1.26.3
+urllib3==1.26.4
 webencodings==0.5.1
 wrapt==1.12.1
 zipp==3.4.0
-fim=0.26
-jsonpath_ng
+jsonpath_ng==1.5.2
+fabric-fim==0.47

@@ -1,5 +1,4 @@
 import fim.user as f
-
 from fimutil.netam.nso import NsoClient
 from fimutil.netam.sr_pce import SrPceClient
 
@@ -49,28 +48,28 @@ class NetworkARM:
             switch = self.topology.add_node(name=node_name, model=model_name, site=node_name + "-site",
                                             node_id=node_nid,
                                             capacities=f.Capacities().set_fields(unit=1),
-                                            labels=f.Labels().set_fields(ipv4=node['address']),
-                                            ntype=f.NodeType.Switch)
+                                            labels=f.Labels().set_fields(local_name=node_name, ipv4=node['address']),
+                                            ntype=f.NodeType.Switch, stitch_node=True)
             dp_sf = switch.add_switch_fabric(name=switch.name + '-sf', layer=f.Layer.L2,
-                                             node_id=switch.node_id + '-sf')
+                                             node_id=switch.node_id + '-sf', stitch_node=True)
             # add ports
             for port in node['interfaces']:
-                port_name = f"{node_name}:{port['name']}"
+                port_name = port['name']
                 port_mac = port['phys-address']
                 port_nid = f"port+{node_name}:{port_name}:mac+{port_mac}"
-                speed_gbps = int(port['speed']) / 1000000000
+                speed_gbps = int(int(port['speed']) / 1000000000)
                 # add capabilities
                 port_caps = f.Capacities()
                 port_caps.set_fields(bw=speed_gbps)
                 # add labels (vlan ??)
                 port_labs = f.Labels()
-                port_labs.set_fields(mac=port_mac)
+                port_labs.set_fields(local_name=port_name, mac=port_mac)
                 if port['ietf-ip:ipv4']:
                     if 'ietf-ip:ipv4' in port and 'address' in port['ietf-ip:ipv4']:
                         for ipv4_addr in port['ietf-ip:ipv4']['address']:
                             ipv4_addr_ip = ipv4_addr['ip']
                             ipv4_addr_mask = ipv4_addr['netmask']
-                            port_labs.set_fields(ipv4=ipv4_addr_ip)
+                            port_labs.set_fields(local_name=port_name, ipv4=ipv4_addr_ip)
                             port_ipv4net_map[port_nid] = {"ip": ipv4_addr_ip, "netmask": ipv4_addr_mask,
                                                           "interface": sp}
                             # only take the first
@@ -80,13 +79,13 @@ class NetworkARM:
                         for ipv6_addr in port['ietf-ip:ipv6']['address']:
                             ipv6_addr_ip = ipv6_addr['ip']
                             ipv6_addr_prefix_len = ipv6_addr['prefix-length']
-                            port_labs.set_fields(ipv6=ipv6_addr_ip)
+                            port_labs.set_fields(local_name=port_name, ipv6=ipv6_addr_ip)
                             # only take the first
                             break
                 sp = dp_sf.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
                                          node_id=port_nid,
                                          capacities=port_caps,
-                                         labels=port_labs)
+                                         labels=port_labs, stitch_node=True)
         # add links
         # loop fetch interface (remove)
         for k in list(port_ipv4net_map):
@@ -114,8 +113,8 @@ class NetworkARM:
 
     def delegate_topology(self, delegation: str) -> None:
         self.topology.single_delegation(delegation_id=delegation,
-                                        label_pools=f.ARMPools(atype=f.DelegationType.LABEL),
-                                        capacity_pools=f.ARMPools(atype=f.DelegationType.CAPACITY))
+                                        label_pools=f.Pools(atype=f.DelegationType.LABEL),
+                                        capacity_pools=f.Pools(atype=f.DelegationType.CAPACITY))
 
     def write_topology(self, file_name: str) -> None:
         if not self.topology:

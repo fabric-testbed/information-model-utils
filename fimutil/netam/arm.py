@@ -49,9 +49,9 @@ class NetworkARM:
                                             node_id=node_nid,
                                             capacities=f.Capacities().set_fields(unit=1),
                                             labels=f.Labels().set_fields(local_name=node_name, ipv4=node['address']),
-                                            ntype=f.NodeType.Switch, stitch_node=True)
-            dp_sf = switch.add_switch_fabric(name=switch.name + '-sf', layer=f.Layer.L2,
-                                             node_id=switch.node_id + '-sf', stitch_node=True)
+                                            stitch_node=True)
+            dp_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2,
+                                             node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS, stitch_node=True)
             # add ports
             for port in node['interfaces']:
                 port_name = port['name']
@@ -82,7 +82,7 @@ class NetworkARM:
                             port_labs.set_fields(local_name=port_name, ipv6=ipv6_addr_ip)
                             # only take the first
                             break
-                sp = dp_sf.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
+                sp = dp_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
                                          node_id=port_nid,
                                          capacities=port_caps,
                                          labels=port_labs, stitch_node=True)

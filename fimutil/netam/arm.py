@@ -84,8 +84,7 @@ class NetworkARM:
                             break
                 sp = dp_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
                                          node_id=port_nid,
-                                         capacities=port_caps,
-                                         labels=port_labs, stitch_node=True)
+                                         capacities=port_caps)
         # add links
         # loop fetch interface (remove)
         for k in list(port_ipv4net_map):

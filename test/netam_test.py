@@ -21,6 +21,6 @@ class NetAmTest(unittest.TestCase):
         devs = self.sr_pce.get_topology_json()
 
     def testBuildNetworkARM(self):
-        self.arm.build_topology("NetAM-ARM-Test1")
+        self.arm.build_topology()
         self.arm.delegate_topology("primary")
         self.arm.write_topology(file_name="/tmp/network-arm.graphml")

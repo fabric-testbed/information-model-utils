@@ -37,15 +37,22 @@ class NetworkARM:
             dev['interfaces'] = ifaces
         return devs
 
-    def build_topology(self, model_name: str) -> None:
+    def build_topology(self) -> None:
         self.topology = f.SubstrateTopology()
         nodes = self._get_device_interfaces()
         port_ipv4net_map = {}
         for node in nodes:
             # add switch node
             node_name = node['name']
+            # TODO: get model name from NSO
+            model_name = 'NCS 55A1-36H'
+            # TODO: get official site name from Ralph (or in switch description string) ?
+            site_name = node_name + '-site'
+            re_site = re.findall(r'(\w+)-.+', node_name)
+            if re_site is not None and len(re_site) > 0:
+                site_name = str.upper(re_site[0])
             node_nid = "node+" + node_name + ":ip+" + node['address']
-            switch = self.topology.add_node(name=node_name, model=model_name, site=node_name + "-site",
+            switch = self.topology.add_node(name=node_name, model=model_name, site=site_name,
                                             node_id=node_nid,
                                             capacities=f.Capacities().set_fields(unit=1),
                                             labels=f.Labels().set_fields(local_name=node_name, ipv4=node['address']),
@@ -56,7 +63,7 @@ class NetworkARM:
             for port in node['interfaces']:
                 port_name = port['name']
                 port_mac = port['phys-address']
-                port_nid = f"port+{node_name}:{port_name}:mac+{port_mac}"
+                port_nid = f"port+{node_name}:{port_name}"
                 speed_gbps = int(int(port['speed']) / 1000000000)
                 # add capabilities
                 port_caps = f.Capacities()
@@ -83,7 +90,7 @@ class NetworkARM:
                             # only take the first
                             break
                 sp = dp_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
-                                         node_id=port_nid,
+                                         node_id=port_nid, labels=port_labs,
                                          capacities=port_caps)
         # add links
         # loop fetch interface (remove)

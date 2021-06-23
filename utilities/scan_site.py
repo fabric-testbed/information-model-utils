@@ -1,5 +1,5 @@
 """
-Scan workers given on command line printing to stdout all pertinent info
+Scan a site given on command line printing to stdout all pertinent info
 """
 
 import argparse
@@ -8,15 +8,15 @@ import logging
 import sys
 
 from fimutil.ralph.ralph_uri import RalphURI
-from fimutil.ralph.worker_node import WorkerNode
+from fimutil.ralph.site import Site
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     # split into different mutually exclusive operations
 
-    parser.add_argument("-w", "--worker", action="store",
-                        help="Scan single worker information")
+    parser.add_argument("-s", "--site", action="store",
+                        help="Scan a site for information")
     parser.add_argument("-b", "--base_uri", action="store",
                         help="Base URL of API")
     parser.add_argument("-d", "--debug", action="count",
@@ -31,8 +31,8 @@ if __name__ == "__main__":
     elif args.debug >= 1:
         logging.basicConfig(level=logging.DEBUG)
 
-    if args.worker is None:
-        print('You must specify the worker', file=sys.stderr)
+    if args.site is None:
+        print('You must specify the site name', file=sys.stderr)
         sys.exit(-1)
 
     if args.base_uri is None:
@@ -46,8 +46,10 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     ralph = RalphURI(token=args.token, base_uri=args.base_uri)
-    worker = WorkerNode(uri=args.base_uri + 'data-center-assets/?hostname=' + args.worker,
-                        ralph=ralph)
-    worker.parse()
-    print(worker)
+    site = Site(site_name=args.site, ralph=ralph)
+
+    logging.info(f'Cataloging site {args.site}')
+    site.catalog()
+    print(site)
+
 

@@ -1,8 +1,13 @@
+import dataclasses
+
 import pyjq
+import logging
 
 from fimutil.ralph.asset import RalphAsset, RalphAssetType, RalphJSONError, RalphAssetMimatch
 from fimutil.ralph.nvme import NVMeDrive
-from fimutil.ralph.ethernet import Ethernet
+from fimutil.ralph.ethernetport import EthernetCardPort
+from fimutil.ralph.gpu import GPU
+from fimutil.ralph.model import WorkerModel
 from fimutil.ralph.ralph_uri import RalphURI
 
 
@@ -10,18 +15,31 @@ class WorkerNode(RalphAsset):
     """
     This class knows how to parse necessary worker fields in Ralph
     """
-    FIELD_MAP = '{SN: .results[0].sn, Model: .results[0].model.category.name}'
+    FIELD_MAP = '{Name: .hostname, SN: .sn}'
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         super().__init__(uri=uri, ralph=ralph)
         self.type = RalphAssetType.Node
+        self.model = None
 
     def parse(self):
-
         super().parse()
 
+        # find model
+        model_url = pyjq.one('.model.url', self.raw_json_obj)
+        self.model = WorkerModel(uri=model_url, ralph=self.ralph)
+        try:
+            self.model.parse()
+        except RalphAssetMimatch:
+            pass
+
         # find NVMe drives in 'disks' section
-        disk_urls = pyjq.one('[ .results[0].disk[].url ]', self.raw_json_obj)
+        try:
+            disk_urls = pyjq.all('.disk[].url', self.raw_json_obj)
+        except ValueError:
+            logging.warning('Unable to find any disks in node, continuing')
+            disk_urls = list()
+
         disk_index = 1
         for disk in disk_urls:
             drive = NVMeDrive(uri=disk, ralph=self.ralph)
@@ -30,18 +48,33 @@ class WorkerNode(RalphAsset):
             except RalphAssetMimatch:
                 continue
             self.components['nvme-' + str(disk_index)] = drive
-            disk_index = disk_index + 1
+            disk_index += 1
 
-        port_urls = pyjq.one('[ .results[0].ethernet[].url ]', self.raw_json_obj)
+        try:
+            port_urls = pyjq.all('.ethernet[].url', self.raw_json_obj)
+        except ValueError:
+            logging.warning('Unable to find any ethernet ports in node, continuing')
+            port_urls = list()
+
         port_index = 1
         for port in port_urls:
-            port = Ethernet(uri=port, ralph=self.ralph)
+            port = EthernetCardPort(uri=port, ralph=self.ralph)
             try:
                 port.parse()
             except RalphAssetMimatch:
                 continue
             self.components['port-' + str(port_index)] = port
-            port_index = port_index + 1
+            port_index += 1
+
+        gpus = GPU.find_gpus(self.raw_json_obj)
+        gpu_index = 1
+        for gpu in gpus:
+            self.components['gpu-' + str(gpu_index)] = dataclasses.asdict(gpu)
+            gpu_index += 1
+
+    def __str__(self):
+        ret = super().__str__()
+        return ret + '\n\t' + str(self.model)
 
 
 

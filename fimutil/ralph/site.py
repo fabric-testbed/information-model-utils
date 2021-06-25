@@ -29,7 +29,7 @@ class Site:
         """
         Catalog what the site has by querying for regular expressions. Names of nodes
         are expected to conform to the following convention:
-        - workers: <site>-w[1234567890]+.fabric-testbed.net
+        - workers: <site>-w[\\d]+.fabric-testbed.net
         - storage: <site>-storage.fabric-testbed.net
         - dp switch: <site>-data-sw.fabric-testbed.net
         """
@@ -38,8 +38,10 @@ class Site:
         results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
                                              urlencode(query))
         worker_urls = pyjq.one('[ .results[].url ]', results)
+        logging.info(f'Identified {len(worker_urls)} workers')
 
         for worker in worker_urls:
+            logging.info(f'Parsing {worker=}')
             ralph_worker = WorkerNode(uri=worker, ralph=self.ralph)
             ralph_worker.parse()
             self.workers.append(ralph_worker)
@@ -50,8 +52,10 @@ class Site:
         storage_url = None
         try:
             storage_url = pyjq.one('[ .results[0].url ]', results)[0]
+            logging.info(f'Identified storage {storage_url=}')
         except ValueError:
             logging.warning('Unable to find storage node in site, continuing')
+
         self.storage = Storage(uri=storage_url, ralph=self.ralph)
         self.storage.parse()
 
@@ -61,6 +65,7 @@ class Site:
         dp_switch_url = None
         try:
             dp_switch_url = pyjq.one('[ .results[0].url ]', results)[0]
+            logging.info(f'Identified DP switch {dp_switch_url=}')
         except ValueError:
             logging.warning('Unable to find a dataplane switch in site, continuing')
         self.dp_switch = DPSwitch(uri=dp_switch_url, ralph=self.ralph)

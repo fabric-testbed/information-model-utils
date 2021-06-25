@@ -10,7 +10,7 @@ class EthernetPort(RalphAsset):
     This class knows how to parse necessary worker fields in Ralph
     """
     FIELD_MAP = '{MAC: .mac, Description: .model_name, Speed: .speed, Connection: .label}'
-    REGEX_FIELDS = {'Peer_port': ['Connection', ".+port ([\\w]+ [0-9/]+) on.+"]}
+    REGEX_FIELDS = {'Peer_port': ['Connection', ".+port ([\\w]+[0-9/]+) .+"]}
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         super().__init__(uri=uri, ralph=ralph)
@@ -29,15 +29,19 @@ class EthernetCardPort(EthernetPort):
     This is a port on a allocatable card in worker
     """
     FIELD_MAP = '{MAC: .mac, Description: .model_name, Speed: .speed, Connection: .label}'
-    REGEX_FIELDS = {'BDF': ['Description', ".+\\(([0-9a-f:.]+)\\).*"],
-                    'Peer_port': ['Connection', ".+port ([\\w]+ [0-9/]+) on.+"],
-                    'Model': ['Description', ".+\\[([\\w-]+)\\].*"]}
+    REGEX_FIELDS = {'BDF': ['Description', ".+?\\(([0-9a-f:.]+)\\).*"],
+                    'vBDF': ['Description', ".+/\\(([0-9a-f:.]+)\\).*"],
+                    'Peer_port': ['Connection', ".+port ([\\w]+[0-9/]+) .+"],
+                    'VLAN': ['Connection', ".+ VLAN ([\\d]+) on.+"],
+                    'Model': ['Description', ".+\\[([\\w-]+).*?\\].*"]}
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         super().__init__(uri=uri, ralph=ralph)
-        self.type = RalphAssetType.Ethernet
+        self.type = RalphAssetType.EthernetCardPF
 
     def parse(self):
         super().parse()
         if 'data-sw' not in self.fields['Connection']:
             raise RalphAssetMimatch('This is not a usable card')
+        if self.fields.get('vBDF', None) is not None:
+            self.type = RalphAssetType.EthernetCardVF

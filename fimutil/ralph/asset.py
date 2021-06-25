@@ -15,6 +15,8 @@ class RalphAssetType(Enum):
     NVMe = auto()
     GPU = auto()
     Ethernet = auto()
+    EthernetCardPF = auto()
+    EthernetCardVF = auto()
     Model = auto()
     Storage = auto()
     DPSwitch = auto()
@@ -75,7 +77,7 @@ class RalphAsset(ABC):
 
     def __str__(self):
         ret = list()
-        ret.append(str(self.type) + ": " + json.dumps(self.fields))
+        ret.append(str(self.type) + "[" + self.uri + "]" + ": " + json.dumps(self.fields))
         for n, comp in self.components.items():
             ret.append('\t' + n + " " + str(comp))
         return "\n".join(ret)

@@ -59,7 +59,7 @@ class StorageModel(SimpleModel):
     """
     FIELD_MAP = '{Model: .category.name}'
     # .*? to make the first match lazy
-    DISK_REGEX = ".*?([\\d.]+)([TGM]B).*"
+    DISK_REGEX = ".*?([\\d.]+)([TGMP]B).*"
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         super().__init__(uri=uri, ralph=ralph)

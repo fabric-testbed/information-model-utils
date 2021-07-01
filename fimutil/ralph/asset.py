@@ -32,7 +32,10 @@ class RalphAsset(ABC):
     how to remap JSON responses from those URIs into needed
     fields.
     """
+    # These are fields extractable using pyjq query expressions
     FIELD_MAP = str()
+    # These are fields that require regex matching from the fields extracted in FIELD_MAP
+    # unmatched regexes simply leave the field unfilled without generating errors
     REGEX_FIELDS = {}
 
     def __init__(self, *, uri: str, ralph: RalphURI):

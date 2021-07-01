@@ -11,7 +11,7 @@ class DPSwitch(RalphAsset):
     """
     Dataplane switch
     """
-    FIELD_MAP = '{Name: .hostname, SN: .sn}'
+    FIELD_MAP = '{Name: .hostname, SN: .sn, IP: .ipaddresses[0]}'
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         super().__init__(uri=uri, ralph=ralph)

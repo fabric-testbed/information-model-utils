@@ -69,7 +69,7 @@ class WorkerNode(RalphAsset):
         gpus = GPU.find_gpus(self.raw_json_obj)
         gpu_index = 1
         for gpu in gpus:
-            self.components['gpu-' + str(gpu_index)] = dataclasses.asdict(gpu)
+            self.components['gpu-' + str(gpu_index)] = gpu
             gpu_index += 1
 
     def __str__(self):

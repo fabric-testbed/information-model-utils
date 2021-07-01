@@ -11,7 +11,7 @@ class GPU:
     """
     Note that because GPUs aren't properly part of Ralph catalog structure,
     they appear as special fields inside the node and as such are not
-    subclassed from RalphAsset (they don't have a URL)
+    subclassed from RalphAsset (they don't have a URL).
     """
     Model: str
     Description: str

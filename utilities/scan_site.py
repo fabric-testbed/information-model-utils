@@ -10,6 +10,10 @@ import sys
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.site import Site
 
+from fimutil.ralph.fim_helper import site_to_fim
+
+from fim.slivers.delegations import DelegationType, Pools
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -23,6 +27,10 @@ if __name__ == "__main__":
                         help="Turn on debugging")
     parser.add_argument("-t", "--token", action="store",
                         help="Ralph API token value")
+    parser.add_argument("-p", "--print", action="store_true",
+                        help="Print output of a scan")
+    parser.add_argument("-m", "--model", action="store",
+                        help="Produce an ARM model of a site and save into indicated file")
 
     args = parser.parse_args()
 
@@ -34,6 +42,8 @@ if __name__ == "__main__":
     if args.site is None:
         print('You must specify the site name', file=sys.stderr)
         sys.exit(-1)
+
+    args.site = args.site.upper()
 
     if args.base_uri is None:
         print('You must specify the base URL (typically https://hostname/api/data-center-assets/',
@@ -50,6 +60,23 @@ if __name__ == "__main__":
 
     logging.info(f'Cataloging site {args.site}')
     site.catalog()
-    print(site)
+    logging.info('Cataloging complete')
+
+    if args.model is not None:
+        logging.info('Producing an ARM model')
+        topo = site_to_fim(site)
+        logging.info('Generating delegations')
+        delegation1 = 'primary'
+
+        # pools are blank - all delegations for interfaces are in the network ad
+        topo.single_delegation(delegation_id=delegation1,
+                               label_pools=Pools(atype=DelegationType.LABEL),
+                               capacity_pools=Pools(atype=DelegationType.CAPACITY))
+        logging.info(f'Model completed, saving to {args.model}')
+        topo.serialize(file_name=args.model)
+        logging.info('Saving completed')
+
+    if args.print:
+        print(site)
 
 

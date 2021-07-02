@@ -20,6 +20,7 @@ class NetAmTest(unittest.TestCase):
     def testSrPceClient(self):
         devs = self.sr_pce.get_topology_json()
 
+    @unittest.skip
     def testBuildNetworkARM(self):
         self.arm.build_topology()
         self.arm.delegate_topology("primary")

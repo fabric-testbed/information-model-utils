@@ -21,7 +21,7 @@ networkx==2.5
 networkx-query==1.0.1
 numpy==1.20.0
 packaging==20.8
-Pillow==8.1.1
+Pillow==8.2.0
 pipdeptree==1.0.0
 pkginfo==1.6.1
 pluggy==0.13.1
@@ -43,7 +43,7 @@ toml==0.10.1
 tqdm==4.54.1
 typed-ast==1.4.1
 typing-extensions==3.7.4.3
-urllib3==1.26.4
+urllib3==1.26.5
 webencodings==0.5.1
 wrapt==1.12.1
 zipp==3.4.0

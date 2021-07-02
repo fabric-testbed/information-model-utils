@@ -38,6 +38,40 @@ print(worker)
 
 ## End-user utilities
 
+Pip install the package. The utilities should be on PATH. Get a token from Ralph GUI for the API. 
+### scan-worker.py
+
+Scans an individual worker node based on its FQDN and returns information about
+it and its components. 
+
+Invocation:
+```
+$ scan_worker.py -w <worker FQDN> -t <Ralph API Token> -b https://hostname/api/
+```
+
+The utility is smart enough to try and discard components that don't need to
+be reflected in the information model (internal worker disks, iDrac or 
+disconnected ports etc)
+
+You can find your Ralph API token in your profile page in Ralph.
+
+### scan-site.py
+
+Similar to above, searches for all usable components of a site (workers nodes, data switch, storage) and prints out
+what it finds.
+
+Invocation:
+```
+$ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -p
+```
+Prints information collected from Ralph
+
+```
+$ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -m <model name>.graphml
+```
+Saves site model into a file. Both `-p` and `-m` could be used together. If neither is specified
+the site is scanned however no extra output is produced. 
+
 ## Installation
 
 Developed under Python 3.9. Using virtualenv, something like this should work:
@@ -52,17 +86,5 @@ Note that to install PyJQ dependency  you need to have `automake` installed on y
 
 ### utilities/scan_worker.py
 
-Scans an individual worker node based on its FQDN and returns information about
-it and its components. 
 
-Invocation:
-```
-python scan_worker.py -w <worker FQDN> -t <Ralph API Token> -b https://hostname/api/data-center-assets/
-```
-
-The utility is smart enough to try and discard components that don't need to
-be reflected in the information model (internal worker disks, iDrac or 
-disconnected ports etc)
-
-You can find your Ralph API token in your profile page in Ralph.
 

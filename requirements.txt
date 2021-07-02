@@ -11,6 +11,7 @@ idna==2.10
 importlib-metadata==3.7.3
 iniconfig==1.0.1
 isort==4.3.21
+jsonpath-ng==1.5.2
 keyring==21.5.0
 kiwisolver==1.3.1
 lazy-object-proxy==1.4.3
@@ -25,11 +26,12 @@ Pillow==8.2.0
 pipdeptree==1.0.0
 pkginfo==1.6.1
 pluggy==0.13.1
+ply==3.11
 py==1.10.0
+pycodestyle==2.6.0
 Pygments==2.7.4
 pyjq==2.5.1
 pyparsing==2.4.7
-pytest==6.2.1
 python-dateutil==2.8.1
 pytz==2020.1
 PyYAML==5.4
@@ -41,11 +43,10 @@ rfc3986==1.4.0
 six==1.15.0
 toml==0.10.1
 tqdm==4.54.1
+twine==3.4.1
 typed-ast==1.4.1
 typing-extensions==3.7.4.3
 urllib3==1.26.5
 webencodings==0.5.1
 wrapt==1.12.1
 zipp==3.4.0
-jsonpath_ng==1.5.2
-fabric-fim==1.0b64

@@ -227,10 +227,10 @@ def __process_card_port(port: EthernetCardPort, org: CardOrganizer) -> None:
         raise RuntimeError('Unable to continue')
 
 
-def __convert_vf_list_to_interface_labels(vfs: List[EthernetCardPort]) -> Labels:
+def __convert_vf_list_to_interface_labels(vfs: List[EthernetCardPort]) -> Tuple[List[str], List[str], List[str]]:
     """
-    Take a list of VFs of a single parent PF and convert into a Labels object
-    with macs, bdfs and vlans specified as lists
+    Take a list of VFs of a single parent PF and convert into a tuple of lists one for MAC, child BDF and VLAN
+    (in that order)
     """
     macs = list()
     bdfs = list()
@@ -240,7 +240,7 @@ def __convert_vf_list_to_interface_labels(vfs: List[EthernetCardPort]) -> Labels
         bdfs.append(vf.fields['vBDF'])
         vlans.append(vf.fields['VLAN'])
 
-    return Labels(mac=macs, bdf=bdfs, vlan=vlans)
+    return macs, bdfs, vlans
 
 
 def __convert_pf_list_to_interface_data(pfs: List[EthernetCardPort]) -> Tuple[List[str], List[str], List[str]]:
@@ -313,10 +313,12 @@ def site_to_fim(site: Site) -> SubstrateTopology:
             parent_macs, parent_bdfs, parent_peers = __convert_pf_list_to_interface_data(v)
             units = 0
             labs = list()
+            child_bdfs = list()
             for pf_parent in v:
                 child_vfs = org.get_vfs_of_parent(pf_parent.fields['BDF'])
-                lab = __convert_vf_list_to_interface_labels(child_vfs)
-                labs.append(lab)
+                macs, bdfs, vlans = __convert_vf_list_to_interface_labels(child_vfs)
+                labs.append(Labels(mac=macs, bdf=bdfs, vlan=vlans))
+                child_bdfs.extend(bdfs)
                 units += len(child_vfs)
             slot = v[0].fields['Slot']
             model = v[0].fields['Model']
@@ -330,6 +332,7 @@ def site_to_fim(site: Site) -> SubstrateTopology:
                                     interface_node_ids=interface_node_ids,
                                     interface_labels=labs,
                                     capacities=Capacities(unit=units),
+                                    labels=Labels(bdf=child_bdfs),
                                     ctype=ComponentType.SharedNIC,
                                     details=descr
                                     )

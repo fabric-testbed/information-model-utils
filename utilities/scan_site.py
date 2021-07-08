@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Scan a site given on command line printing to stdout all pertinent info
 """

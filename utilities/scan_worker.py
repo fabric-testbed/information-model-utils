@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
 """
 Scan workers given on command line printing to stdout all pertinent info
 """
 
 import argparse
 import traceback
+
 import logging
 import sys
 

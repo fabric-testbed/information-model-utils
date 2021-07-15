@@ -39,7 +39,7 @@ print(worker)
 ## End-user utilities
 
 Pip install the package. The utilities should be on PATH. Get a token from Ralph GUI for the API. 
-### scan-worker.py
+### scan_worker.py
 
 Scans an individual worker node based on its FQDN and returns information about
 it and its components. 
@@ -55,7 +55,7 @@ disconnected ports etc)
 
 You can find your Ralph API token in your profile page in Ralph.
 
-### scan-site.py
+### scan_site.py
 
 Similar to above, searches for all usable components of a site (workers nodes, data switch, storage) and prints out
 what it finds.
@@ -69,8 +69,19 @@ Prints information collected from Ralph
 ```
 $ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -m <model name>.graphml
 ```
-Saves site model into a file. Both `-p` and `-m` could be used together. If neither is specified
+Saves site model into a file in GraphML format. Both `-p` and `-m` could be used together. If neither is specified
 the site is scanned however no extra output is produced. 
+
+### scan_net.py
+
+Similar to above, interrogates NSO, PCE (future work) to create a model of the inter-site network.
+
+Invocation:
+```
+$ scan_net.py -n <nso url> -u <nso username> -p <nso password> -m <model name>.graphml
+```
+
+Saves the model into a file indicated with `-m` in GraphML format.
 
 ## Installation
 

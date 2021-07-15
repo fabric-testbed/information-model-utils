@@ -11,7 +11,8 @@ information from various sources into FABRIC Information Models
 
 This library uses different sources to extract necessary information to build
 site and network advertisement models for FABRIC control framework:
-- fimutil.ralph - uses Ralph inventory system REST API
+- fimutil.ralph - uses Ralph inventory system REST API to create site models
+- fimutil.netam - uses NSO and other sources to create a network model
 
 ### Ralph REST
 Since Ralph presents information in the form of nested dictionaries, the library

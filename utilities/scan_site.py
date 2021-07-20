@@ -32,6 +32,8 @@ if __name__ == "__main__":
                         help="Print output of a scan")
     parser.add_argument("-m", "--model", action="store",
                         help="Produce an ARM model of a site and save into indicated file")
+    parser.add_argument("-a", "--address", action="store",
+                        help="Provide address for the site")
 
     args = parser.parse_args()
 
@@ -65,7 +67,7 @@ if __name__ == "__main__":
 
     if args.model is not None:
         logging.info('Producing an ARM model')
-        topo = site_to_fim(site)
+        topo = site_to_fim(site, args.address)
         logging.info('Generating delegations')
         delegation1 = 'primary'
 

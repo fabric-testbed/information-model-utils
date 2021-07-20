@@ -10,7 +10,7 @@ from fim.user.component import Component, ComponentType
 from fim.user.link import LinkType
 from fim.user.network_service import ServiceType
 from fim.slivers.identifiers import *
-from fim.slivers.capacities_labels import Capacities, Labels
+from fim.slivers.capacities_labels import Capacities, Labels, Location
 
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.site import Site
@@ -266,11 +266,16 @@ def __convert_pf_list_to_interface_data(pfs: List[EthernetCardPort]) -> Tuple[Li
     return macs, bdfs, peers
 
 
-def site_to_fim(site: Site) -> SubstrateTopology:
+def site_to_fim(site: Site, address: str) -> SubstrateTopology:
     """
-    Produce a site substrate topology advertisements from Ralph site information
+    Produce a site substrate topology advertisements from Ralph site information.
+    Optionally supply externally obtained postal address.
     """
     logging.info(f'Producing SubstrateTopology model for site {site.name}')
+
+    loc = None
+    if address is not None:
+        loc = Location(postal=address)
 
     topo = SubstrateTopology()
 
@@ -291,7 +296,7 @@ def site_to_fim(site: Site) -> SubstrateTopology:
                          disk=disk_size_int)
         w = topo.add_node(name=worker.fields['Name'], model=worker.model.fields['Model'],
                           node_id=worker.fields['SN'], ntype=NodeType.Server,
-                          capacities=cap, site=site.name)
+                          capacities=cap, site=site.name, location=loc)
         #
         # handle various component types
         #

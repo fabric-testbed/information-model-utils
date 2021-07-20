@@ -36,6 +36,10 @@ worker = WorkerNode(uri=worker_search_uri, ralph=ralph)
 worker.parse()
 print(worker)
 ```
+*NOTE: We have created a number of conventions for how the information is stored in Ralph
+to support FABRIC hardware. Ansible scripts scrape information from hardware into Ralph
+following those conventions. The way someone else may decide to store the same information
+in Ralph may not conform to those conventions and make utilities in this package useless.*
 
 ## End-user utilities
 

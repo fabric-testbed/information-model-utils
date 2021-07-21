@@ -16,8 +16,9 @@ class NetworkARM:
     Generate Network AM resources information model.
     """
 
-    def __init__(self, *, nso_url: str, nso_user: str, nso_pass: str, sr_pce_url: str, sr_pce_user: str,
-                 sr_pce_pass: str):
+    def __init__(self, *, nso_url: str, nso_user: str, nso_pass: str,
+                 sr_pce_url: str = None, sr_pce_user: str = None,
+                 sr_pce_pass: str = None):
         self.nso = NsoClient(nso_url=nso_url, nso_user=nso_user, nso_pass=nso_pass)
         self.sr_pce = SrPceClient(sr_pce_url=sr_pce_url, sr_pce_user=sr_pce_user, sr_pce_pass=sr_pce_pass)
         self.topology = None

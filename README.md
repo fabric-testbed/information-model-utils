@@ -1,6 +1,6 @@
 [![Requirements Status](https://requires.io/github/fabric-testbed/information-model-utils/requirements.svg?branch=main)](https://requires.io/github/fabric-testbed/information-model-utils/requirements/?branch=main)
 
-![PyPI](https://img.shields.io/pypi/v/fim-utils?style=plastic)
+[![PyPI](https://img.shields.io/pypi/v/fim-utils?style=plastic)](https://pypi.org/manage/project/fim-utils/releases/)
 
 # Information Model Utilities
 
@@ -36,10 +36,16 @@ worker = WorkerNode(uri=worker_search_uri, ralph=ralph)
 worker.parse()
 print(worker)
 ```
+*NOTE: We have created a number of conventions for how the information is stored in Ralph
+to support FABRIC hardware. Ansible scripts scrape information from hardware into Ralph
+following those conventions. The way someone else may decide to store the same information
+in Ralph may not conform to those conventions and make utilities in this package useless.*
 
 ## End-user utilities
 
-Pip install the package. The utilities should be on PATH. Get a token from Ralph GUI for the API. 
+Pip install the package (see Installation section). The utilities should be on PATH. 
+Get a token from Ralph GUI for the Ralph API and username/password for NSO. 
+
 ### scan_worker.py
 
 Scans an individual worker node based on its FQDN and returns information about
@@ -59,7 +65,7 @@ You can find your Ralph API token in your profile page in Ralph.
 ### scan_site.py
 
 Similar to above, searches for all usable components of a site (workers nodes, data switch, storage) and prints out
-what it finds.
+what it finds or saves to a model.
 
 Invocation:
 ```
@@ -86,17 +92,25 @@ Saves the model into a file indicated with `-m` in GraphML format.
 
 ## Installation
 
+### For use
+
+You can use a virtualenv or install directly:
+```
+$ pip install fim-utils
+```
+
+### For development
+
 Developed under Python 3.9. Using virtualenv, something like this should work:
 
 ```
+$ git clone https://github.com/fabric-testbed/information-model-utils.git
 $ mkvirtualenv -r requirements.txt fim-utils
-$ cd utilities/
+$ cd information-model-utils/utilities/
 $ python scan_worker.py <options>
 ```
-Note that to install PyJQ dependency  you need to have `automake` installed on your system. So
+Note that to install PyJQ dependency as part of requirements you need to have `automake` installed on your system. So
 `yum install automake` or `brew install automake` or similar. 
-
-### utilities/scan_worker.py
 
 
 

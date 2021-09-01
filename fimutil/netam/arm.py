@@ -41,6 +41,7 @@ class NetworkARM:
 
     def build_topology(self) -> None:
         # firstly get SR-PCE active links
+        self.sr_pce.get_topology_json()
         self.valid_ipv4_links = self.sr_pce.get_ipv4_links()
         # start topology model
         self.topology = f.SubstrateTopology()
@@ -110,8 +111,9 @@ class NetworkARM:
             for k_r in list(port_ipv4net_map):
                 v_r = port_ipv4net_map[k_r]
                 port_ip_r = v_r['ip']
-                port_netmask_r = v_r['netmask']
-                if port_netmask == port_netmask_r and _in_same_network(port_ip, port_ip_r, port_netmask):
+                # port_netmask_r = v_r['netmask']
+                # if port_netmask == port_netmask_r and _in_same_network(port_ip, port_ip_r, port_netmask):
+                if f'{port_ip}-{port_ip_r}' in self.valid_ipv4_links:
                     port_ipv4net_map.pop(k_r, None)
                     port_sp_r = v_r['interface']
                     # add link

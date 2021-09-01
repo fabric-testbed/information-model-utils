@@ -1,17 +1,25 @@
 import requests
 import urllib3
+from yaml import load as yload
+from yaml import FullLoader
+import os
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 
 class NsoClient:
     """
     Retrieve Network AM resources information from Cisco NSO.
     """
 
-    def __init__(self, *, nso_url: str, nso_user: str, nso_pass: str):
-        self.nso_url = nso_url
-        self.nso_user = nso_user
-        self.nso_pass = nso_pass
+    def __init__(self, *, config=None, config_file=None):
+        if not config:
+            self.config = self.get_config(config_file)
+        else:
+            self.config = config
+        if 'nso_url' not in self.config or 'nso_user' not in self.config or 'nso_pass' not in self.config:
+            raise NetAmNsoError('NSO config missing nso_url, nso_usr or nso_pass ')
+        self.nso_url = self.config['nso_url']
+        self.nso_user = self.config['nso_user']
+        self.nso_pass = self.config['nso_pass']
         self.json_topology = None
 
     def _get(self, ep) -> dict:
@@ -43,6 +51,16 @@ class NsoClient:
         if 'ietf-interfaces:interface' not in ret_json:
             raise NetAmNsoError(f"GET: {self.nso_url}/{ep}: 'ietf-interfaces:interface' unfound in response")
         return ret_json['ietf-interfaces:interface']
+
+    def get_config(self, config_file):
+        if not config_file:
+            config_file = os.getenv('HOME') + '/.netam.conf'
+            if not os.path.isfile(config_file):
+                config_file = '/etc/netam.conf'
+                if not os.path.isfile(config_file):
+                    raise Exception('Config file not found: %s' % config_file)
+        with open(config_file, 'r') as fd:
+            return yload(fd.read(), Loader=FullLoader)
 
 
 class NetAmNsoError(Exception):

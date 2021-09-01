@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
+import re
+import logging
 
 import json
 import pyjq
@@ -13,6 +15,11 @@ class RalphAssetType(Enum):
     NVMe = auto()
     GPU = auto()
     Ethernet = auto()
+    EthernetCardPF = auto()
+    EthernetCardVF = auto()
+    Model = auto()
+    Storage = auto()
+    DPSwitch = auto()
     Abstract = auto()
 
     def __str__(self):
@@ -25,11 +32,16 @@ class RalphAsset(ABC):
     how to remap JSON responses from those URIs into needed
     fields.
     """
+    # These are fields extractable using pyjq query expressions
     FIELD_MAP = str()
+    # These are fields that require regex matching from the fields extracted in FIELD_MAP
+    # unmatched regexes simply leave the field unfilled without generating errors
+    REGEX_FIELDS = {}
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         self.uri = uri
         self.fieldmap = self.FIELD_MAP
+        self.regex_fields = self.REGEX_FIELDS
         self.fields = dict()
         self.type = RalphAssetType.Abstract
         self.ralph = ralph
@@ -39,7 +51,19 @@ class RalphAsset(ABC):
     def self_populate(self):
         # save JSON object
         self.raw_json_obj = self.ralph.get_json_object(self.uri)
+        # massage results - sometimes they are part of the larger query,
+        # sometimes node by itself
+        if self.raw_json_obj.get('results', None) is not None:
+            self.raw_json_obj = self.raw_json_obj['results'][0]
+
         self.populate_fields_from_obj(json_obj=self.raw_json_obj)
+        # populate regex fields
+        for k, v in self.regex_fields.items():
+            if self.fields[v[0]] is None:
+                continue
+            matches = re.match(v[1], self.fields[v[0]])
+            if matches is not None:
+                self.fields[k] = matches.group(1)
 
     def populate_fields_from_obj(self, *, json_obj):
 
@@ -56,10 +80,13 @@ class RalphAsset(ABC):
 
     def __str__(self):
         ret = list()
-        ret.append(str(self.type) + ": " + json.dumps(self.fields))
+        ret.append(str(self.type) + "[" + self.uri + "]" + ": " + json.dumps(self.fields))
         for n, comp in self.components.items():
             ret.append('\t' + n + " " + str(comp))
         return "\n".join(ret)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class RalphJSONError(Exception):

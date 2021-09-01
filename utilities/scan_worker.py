@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
 """
 Scan workers given on command line printing to stdout all pertinent info
 """
 
 import argparse
 import traceback
+
 import logging
 import sys
 
@@ -46,7 +48,7 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     ralph = RalphURI(token=args.token, base_uri=args.base_uri)
-    worker = WorkerNode(uri=args.base_uri + '?hostname=' + args.worker,
+    worker = WorkerNode(uri=args.base_uri + 'data-center-assets/?hostname=' + args.worker,
                         ralph=ralph)
     worker.parse()
     print(worker)

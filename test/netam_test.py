@@ -20,6 +20,7 @@ class NetAmTest(unittest.TestCase):
         links_json = sr_pce.get_ipv4_links()
         assert len(links_json) >= 1 and len(links_json) % 2 == 0
 
+    @unittest.skip
     def testBuildNetworkARM(self):
         arm = NetworkARM()
         arm.build_topology()

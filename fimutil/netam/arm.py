@@ -1,9 +1,10 @@
 import fim.user as f
 from fimutil.netam.nso import NsoClient
 from fimutil.netam.sr_pce import SrPceClient
-
 import re
-import json
+import os
+from yaml import load as yload
+from yaml import FullLoader
 from ipaddress import IPv4Interface
 
 
@@ -16,12 +17,12 @@ class NetworkARM:
     Generate Network AM resources information model.
     """
 
-    def __init__(self, *, nso_url: str, nso_user: str, nso_pass: str,
-                 sr_pce_url: str = None, sr_pce_user: str = None,
-                 sr_pce_pass: str = None):
-        self.nso = NsoClient(nso_url=nso_url, nso_user=nso_user, nso_pass=nso_pass)
-        self.sr_pce = SrPceClient(sr_pce_url=sr_pce_url, sr_pce_user=sr_pce_user, sr_pce_pass=sr_pce_pass)
+    def __init__(self, *, config_file=None):
         self.topology = None
+        self.config = self.get_config(config_file)
+        self.nso = NsoClient(config=self.config)
+        self.sr_pce = SrPceClient(config=self.config)
+        self.valid_ipv4_links = None
 
     def _get_device_interfaces(self) -> list:
         devs = self.nso.devices()
@@ -39,6 +40,10 @@ class NetworkARM:
         return devs
 
     def build_topology(self) -> None:
+        # firstly get SR-PCE active links
+        self.sr_pce.get_topology_json()
+        self.valid_ipv4_links = self.sr_pce.get_ipv4_links()
+        # start topology model
         self.topology = f.SubstrateTopology()
         nodes = self._get_device_interfaces()
         port_ipv4net_map = {}
@@ -106,8 +111,9 @@ class NetworkARM:
             for k_r in list(port_ipv4net_map):
                 v_r = port_ipv4net_map[k_r]
                 port_ip_r = v_r['ip']
-                port_netmask_r = v_r['netmask']
-                if port_netmask == port_netmask_r and _in_same_network(port_ip, port_ip_r, port_netmask):
+                # port_netmask_r = v_r['netmask']
+                # if port_netmask == port_netmask_r and _in_same_network(port_ip, port_ip_r, port_netmask):
+                if f'{port_ip}-{port_ip_r}' in self.valid_ipv4_links:
                     port_ipv4net_map.pop(k_r, None)
                     port_sp_r = v_r['interface']
                     # add link
@@ -126,6 +132,16 @@ class NetworkARM:
         if not self.topology:
             raise NetAmArmError("Topology is None")
         self.topology.serialize(file_name=file_name)
+
+    def get_config(self, config_file):
+        if not config_file:
+            config_file = os.getenv('HOME') + '/.netam.conf'
+            if not os.path.isfile(config_file):
+                config_file = '/etc/netam.conf'
+                if not os.path.isfile(config_file):
+                    raise Exception('Config file not found: %s' % config_file)
+        with open(config_file, 'r') as fd:
+            return yload(fd.read(), Loader=FullLoader)
 
 
 class NetAmArmError(Exception):

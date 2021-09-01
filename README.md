@@ -41,6 +41,7 @@ to support FABRIC hardware. Ansible scripts scrape information from hardware int
 following those conventions. The way someone else may decide to store the same information
 in Ralph may not conform to those conventions and make utilities in this package useless.*
 
+
 ## End-user utilities
 
 Pip install the package (see Installation section). The utilities should be on PATH. 
@@ -85,10 +86,20 @@ Similar to above, interrogates NSO, PCE (future work) to create a model of the i
 
 Invocation:
 ```
-$ scan_net.py -n <nso url> -u <nso username> -p <nso password> -m <model name>.graphml
+$ scan_net.py -c config_file -m <model name>.graphml
 ```
 
 Saves the model into a file indicated with `-m` in GraphML format.
+  
+Optional `-c` points to a YAML configure file with NSO and SR-PCE REST authentication parameters. Without it, default location is $HOME/.netam.conf or /etc/netam.conf. Example below:
+```
+nso_url: https://192.168.11.222/restconf/data
+nso_user: admin
+nso_pass: xxxxx
+sr_pce_url: http://192.168.13.3:8080/topo/subscribe/txt
+sr_pce_user: admin
+sr_pce_pass: xxxxx
+```
 
 ## Installation
 

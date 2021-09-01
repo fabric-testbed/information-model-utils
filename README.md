@@ -41,6 +41,20 @@ to support FABRIC hardware. Ansible scripts scrape information from hardware int
 following those conventions. The way someone else may decide to store the same information
 in Ralph may not conform to those conventions and make utilities in this package useless.*
 
+### NetAM ARM generation
+
+Run test case testBuildNetworkARM in netam_test.py.
+
+Add NSO and SR-PCE REST authentication parameters in either $HOME/.netam.conf or /etc/netam.conf YAML file. Example below:
+```
+nso_url: https://192.168.11.222/restconf/data
+nso_user: admin
+nso_pass: xxxxx
+sr_pce_url: http://192.168.13.3:8080/topo/subscribe/txt
+sr_pce_user: admin
+sr_pce_pass: xxxxx
+```
+
 ## End-user utilities
 
 Pip install the package (see Installation section). The utilities should be on PATH. 

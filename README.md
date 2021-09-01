@@ -91,7 +91,7 @@ $ scan_net.py -c config_file -m <model name>.graphml
 
 Saves the model into a file indicated with `-m` in GraphML format.
   
-Optional `-c` points to a YAML conigure file with NSO and SR-PCE REST authentication parameters. Without it, default location is $HOME/.netam.conf or /etc/netam.conf. Example below:
+Optional `-c` points to a YAML configure file with NSO and SR-PCE REST authentication parameters. Without it, default location is $HOME/.netam.conf or /etc/netam.conf. Example below:
 ```
 nso_url: https://192.168.11.222/restconf/data
 nso_user: admin

@@ -59,7 +59,7 @@ class NetworkARM:
                 site_name = str.upper(re_site[0])
             node_nid = "node+" + node_name + ":ip+" + node['address']
             switch = self.topology.add_node(name=node_name, model=model_name, site=site_name,
-                                            node_id=node_nid,
+                                            node_id=node_nid, ntype=f.NodeType.Switch,
                                             capacities=f.Capacities().set_fields(unit=1),
                                             labels=f.Labels().set_fields(local_name=node_name, ipv4=node['address']),
                                             stitch_node=True)

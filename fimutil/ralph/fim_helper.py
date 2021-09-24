@@ -431,8 +431,8 @@ if __name__ == "__main__":
     size, from_unit = __parse_size_spec('30.01 MB')
     print(size, from_unit, int(size))
 
-    ralph = RalphURI(token='f3ab6b058c0d3968765554a63de41a3c6559a080',
-                     base_uri='https://inventory.fabric-testbed.net/api/')
+    ralph = RalphURI(token='abcdefg',
+                     base_uri='https://url/api/')
     site = Site(site_name='LBNL', ralph=ralph)
     site.catalog()
     topo = site_to_fim(site)

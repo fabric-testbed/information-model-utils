@@ -34,6 +34,8 @@ if __name__ == "__main__":
                         help="Produce an ARM model of a site and save into indicated file")
     parser.add_argument("-a", "--address", action="store",
                         help="Provide address for the site")
+    parser.add_argument("-n", "--no-ssl", action="store_true",
+                        help="Disable SSL server sert validation (use with caution!)")
 
     args = parser.parse_args()
 
@@ -58,7 +60,7 @@ if __name__ == "__main__":
               file=sys.stderr)
         sys.exit(-1)
 
-    ralph = RalphURI(token=args.token, base_uri=args.base_uri)
+    ralph = RalphURI(token=args.token, base_uri=args.base_uri, disable_ssl=args.no_ssl)
     site = Site(site_name=args.site, ralph=ralph)
 
     logging.info(f'Cataloging site {args.site}')

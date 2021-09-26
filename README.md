@@ -80,8 +80,8 @@ $ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -a <street 
 Saves site model into a file in GraphML format. Both `-p` and `-m` could be used together. If neither is specified
 the site is scanned however no extra output is produced. 
 
-Using `-a` is strongly advised (to support GIS-style visualizations of slices), however test the address using 
-[Nominatim](https://nominatim.openstreetmap.org/ui/search.html) service first to make sure it resolves.
+Using `-a` is strongly advised (to support GIS-style visualizations of slices), the code automatically tests the
+provided postal address to make sure it is resolvable into Lat/Lon coordinates.
 
 ### scan_net.py
 

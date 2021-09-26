@@ -14,6 +14,7 @@ from fimutil.ralph.site import Site
 from fimutil.ralph.fim_helper import site_to_fim
 
 from fim.slivers.delegations import DelegationType, Pools
+from fim.slivers.capacities_labels import Location, LocationException
 
 if __name__ == "__main__":
 
@@ -59,6 +60,20 @@ if __name__ == "__main__":
         print('You must specify a Ralph API token, you can find it in your profile page in Ralph',
               file=sys.stderr)
         sys.exit(-1)
+
+    if args.address is not None:
+        loc = Location(postal=args.address)
+        print(f'Validating site postal address {args.address}')
+        try:
+            lat, lon = loc.to_latlon()
+            print(f'{lat=}, {lon=}')
+        except LocationException as le:
+            print(f'Unable to convert provided site postal address into coordinates. Please consider altering'
+                  f'it, e.g. adding zip code, removing suite etc')
+            sys.exit(-1)
+    else:
+        print('WARNING: you did not provide a site postal address with -a option - '
+              'it is strongly recommended that you do.')
 
     ralph = RalphURI(token=args.token, base_uri=args.base_uri, disable_ssl=args.no_ssl)
     site = Site(site_name=args.site, ralph=ralph)

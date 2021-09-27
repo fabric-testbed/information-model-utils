@@ -21,6 +21,9 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", action="store",
                         help="Produce an ARM model of a site and save into indicated file")
 
+    parser.add_argument("--isis-link-validation", action="store_true",
+                        help="Generate model only based on NSO information")
+
     args = parser.parse_args()
 
     if args.debug is None:
@@ -32,9 +35,11 @@ if __name__ == "__main__":
         print('You must specify the name of the file to save the model into', file=sys.stderr)
         sys.exit(-1)
 
-    arm = NetworkARM(config_file=args.config)
+    arm = NetworkARM(config_file=args.config, isis_link_validation=args.isis_link_validation)
 
     logging.info('Querying NSO')
+    if args.isis_link_validation:
+        logging.info('Querying SR-PCE for IS-IS link validation')
     arm.build_topology()
 
     logging.info('Generating delegations')

@@ -32,14 +32,15 @@ class NetworkARM:
         for dev in devs:
             dev_name = dev['name']
             ifaces = self.nso.interfaces(dev_name)
-            for iface in list(ifaces):
-                # only keep interfaces in up status and of "*GigE0/1/2*" pattern
-                if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d', iface['name']):
-                    # get rid of 'statistics' attributes
-                    iface.pop('statistics', None)
-                    continue
-                ifaces.remove(iface)
-            dev['interfaces'] = ifaces
+            if ifaces:
+                for iface in list(ifaces):
+                    # only keep interfaces in up status and of "*GigE0/1/2*" pattern
+                    if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d', iface['name']):
+                        # get rid of 'statistics' attributes
+                        iface.pop('statistics', None)
+                        continue
+                    ifaces.remove(iface)
+                dev['interfaces'] = ifaces
         return devs
 
     def build_topology(self) -> None:
@@ -70,37 +71,38 @@ class NetworkARM:
             dp_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2,
                                              node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS, stitch_node=True)
             # add ports
-            for port in node['interfaces']:
-                port_name = port['name']
-                port_mac = port['phys-address']
-                port_nid = f"port+{node_name}:{port_name}"
-                speed_gbps = int(int(port['speed']) / 1000000000)
-                # add capabilities
-                port_caps = f.Capacities()
-                port_caps.set_fields(bw=speed_gbps)
-                # add labels (vlan ??)
-                port_labs = f.Labels()
-                port_labs.set_fields(local_name=port_name, mac=port_mac)
-                if 'ietf-ip:ipv4' in port and 'address' in port['ietf-ip:ipv4']:
-                    for ipv4_addr in port['ietf-ip:ipv4']['address']:
-                        ipv4_addr_ip = ipv4_addr['ip']
-                        ipv4_addr_mask = ipv4_addr['netmask']
-                        port_labs.set_fields(local_name=port_name, ipv4=ipv4_addr_ip)
-                        port_ipv4net_map[port_nid] = {"ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
-                        # only take the first
-                        break
-                if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
-                    for ipv6_addr in port['ietf-ip:ipv6']['address']:
-                        ipv6_addr_ip = ipv6_addr['ip']
-                        ipv6_addr_prefix_len = ipv6_addr['prefix-length']
-                        port_labs.set_fields(local_name=port_name, ipv6=ipv6_addr_ip)
-                        # only take the first
-                        break
-                sp = dp_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
-                                         node_id=port_nid, labels=port_labs,
-                                         capacities=port_caps)
-                if port_nid in port_ipv4net_map:
-                    port_ipv4net_map[port_nid]["interface"] = sp
+            if 'interfaces' in node:
+                for port in node['interfaces']:
+                    port_name = port['name']
+                    port_mac = port['phys-address']
+                    port_nid = f"port+{node_name}:{port_name}"
+                    speed_gbps = int(int(port['speed']) / 1000000000)
+                    # add capabilities
+                    port_caps = f.Capacities()
+                    port_caps.set_fields(bw=speed_gbps)
+                    # add labels (vlan ??)
+                    port_labs = f.Labels()
+                    port_labs.set_fields(local_name=port_name, mac=port_mac)
+                    if 'ietf-ip:ipv4' in port and 'address' in port['ietf-ip:ipv4']:
+                        for ipv4_addr in port['ietf-ip:ipv4']['address']:
+                            ipv4_addr_ip = ipv4_addr['ip']
+                            ipv4_addr_mask = ipv4_addr['netmask']
+                            port_labs.set_fields(local_name=port_name, ipv4=ipv4_addr_ip)
+                            port_ipv4net_map[port_nid] = {"ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
+                            # only take the first
+                            break
+                    if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
+                        for ipv6_addr in port['ietf-ip:ipv6']['address']:
+                            ipv6_addr_ip = ipv6_addr['ip']
+                            ipv6_addr_prefix_len = ipv6_addr['prefix-length']
+                            port_labs.set_fields(local_name=port_name, ipv6=ipv6_addr_ip)
+                            # only take the first
+                            break
+                    sp = dp_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
+                                             node_id=port_nid, labels=port_labs,
+                                             capacities=port_caps)
+                    if port_nid in port_ipv4net_map:
+                        port_ipv4net_map[port_nid]["interface"] = sp
 
         # add links
         for k in list(port_ipv4net_map):

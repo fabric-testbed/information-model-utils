@@ -49,7 +49,8 @@ class NsoClient:
         ep = f"tailf-ncs:devices/device={device_name}/live-status/ietf-interfaces:interfaces-state/interface"
         ret_json = self._get(ep)
         if 'ietf-interfaces:interface' not in ret_json:
-            raise NetAmNsoError(f"GET: {self.nso_url}/{ep}: 'ietf-interfaces:interface' unfound in response")
+            return None
+            # raise NetAmNsoError(f"GET: {self.nso_url}/{ep}: 'ietf-interfaces:interface' unfound in response")
         return ret_json['ietf-interfaces:interface']
 
     def get_config(self, config_file):

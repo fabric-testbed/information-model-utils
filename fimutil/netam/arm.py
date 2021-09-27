@@ -17,11 +17,14 @@ class NetworkARM:
     Generate Network AM resources information model.
     """
 
-    def __init__(self, *, config_file=None):
+    def __init__(self, *, config_file=None, isis_link_validation=False):
         self.topology = None
         self.config = self.get_config(config_file)
         self.nso = NsoClient(config=self.config)
-        self.sr_pce = SrPceClient(config=self.config)
+        if isis_link_validation:
+            self.sr_pce = SrPceClient(config=self.config)
+        else:
+            self.sr_pce = None
         self.valid_ipv4_links = None
 
     def _get_device_interfaces(self) -> list:
@@ -41,8 +44,9 @@ class NetworkARM:
 
     def build_topology(self) -> None:
         # firstly get SR-PCE active links
-        self.sr_pce.get_topology_json()
-        self.valid_ipv4_links = self.sr_pce.get_ipv4_links()
+        if self.sr_pce is not None:
+            self.sr_pce.get_topology_json()
+            self.valid_ipv4_links = self.sr_pce.get_ipv4_links()
         # start topology model
         self.topology = f.SubstrateTopology()
         nodes = self._get_device_interfaces()
@@ -111,9 +115,14 @@ class NetworkARM:
             for k_r in list(port_ipv4net_map):
                 v_r = port_ipv4net_map[k_r]
                 port_ip_r = v_r['ip']
-                # port_netmask_r = v_r['netmask']
-                # if port_netmask == port_netmask_r and _in_same_network(port_ip, port_ip_r, port_netmask):
-                if f'{port_ip}-{port_ip_r}' in self.valid_ipv4_links:
+                has_link = False
+                if self.valid_ipv4_links is None: # form link if local and remote ipv4 addresses in same subnet
+                    port_netmask_r = v_r['netmask']
+                    if port_netmask == port_netmask_r and _in_same_network(port_ip, port_ip_r, port_netmask):
+                        has_link = True
+                elif f'{port_ip}-{port_ip_r}' in self.valid_ipv4_links:
+                    has_link = True
+                if has_link:
                     port_ipv4net_map.pop(k_r, None)
                     port_sp_r = v_r['interface']
                     # add link

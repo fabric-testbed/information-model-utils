@@ -18,13 +18,15 @@ if __name__ == "__main__":
     # split into different mutually exclusive operations
 
     parser.add_argument("-w", "--worker", action="store",
-                        help="Scan single worker information")
+                        help="Scan single worker information (use FQDN)")
     parser.add_argument("-b", "--base_uri", action="store",
                         help="Base URL of API")
     parser.add_argument("-d", "--debug", action="count",
                         help="Turn on debugging")
     parser.add_argument("-t", "--token", action="store",
                         help="Ralph API token value")
+    parser.add_argument("-n", "--no-ssl", action="store_true",
+                        help="Disable SSL server sert validation (use with caution!)")
 
     args = parser.parse_args()
 
@@ -42,12 +44,15 @@ if __name__ == "__main__":
               file=sys.stderr)
         sys.exit(-1)
 
+    if not args.base_uri.endswith('/'):
+        args.base_uri += '/'
+
     if args.token is None:
         print('You must specify a Ralph API token, you can find it in your profile page in Ralph',
               file=sys.stderr)
         sys.exit(-1)
 
-    ralph = RalphURI(token=args.token, base_uri=args.base_uri)
+    ralph = RalphURI(token=args.token, base_uri=args.base_uri, disable_ssl=args.no_ssl)
     worker = WorkerNode(uri=args.base_uri + 'data-center-assets/?hostname=' + args.worker,
                         ralph=ralph)
     worker.parse()

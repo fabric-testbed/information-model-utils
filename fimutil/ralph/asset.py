@@ -53,8 +53,11 @@ class RalphAsset(ABC):
         self.raw_json_obj = self.ralph.get_json_object(self.uri)
         # massage results - sometimes they are part of the larger query,
         # sometimes node by itself
-        if self.raw_json_obj.get('results', None) is not None:
-            self.raw_json_obj = self.raw_json_obj['results'][0]
+        try:
+            if self.raw_json_obj.get('results', None) is not None:
+                self.raw_json_obj = self.raw_json_obj['results'][0]
+        except IndexError:
+            raise RuntimeError(f'Unable to find asset {self.uri}')
 
         self.populate_fields_from_obj(json_obj=self.raw_json_obj)
         # populate regex fields

@@ -1,5 +1,7 @@
 import urllib3
 import json
+import ssl
+import logging
 
 
 class RalphURI:
@@ -7,10 +9,19 @@ class RalphURI:
     Load JSON file from a Ralph URI. Deal with authentication.
     """
 
-    def __init__(self, *, token: str, base_uri: str):
+    def __init__(self, *, token: str, base_uri: str, disable_ssl: False):
         self.token = token
+        if not base_uri.endswith('/'):
+            base_uri += '/'
         self.base_uri = base_uri
-        self.pool = urllib3.PoolManager()
+        if disable_ssl:
+            logging.warning('Disabling server SSL certificate validation')
+            cert_reqs = ssl.CERT_NONE
+            urllib3.disable_warnings()
+        else:
+            cert_reqs = ssl.CERT_REQUIRED
+
+        self.pool = urllib3.PoolManager(cert_reqs=cert_reqs)
 
     def get_json_object(self, uri: str):
         # avoid http->https redirects, just replace directly in uri

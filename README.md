@@ -75,10 +75,13 @@ $ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -p
 Prints information collected from Ralph
 
 ```
-$ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -m <model name>.graphml
+$ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -a <street address string> -m <model name>.graphml
 ```
 Saves site model into a file in GraphML format. Both `-p` and `-m` could be used together. If neither is specified
 the site is scanned however no extra output is produced. 
+
+Using `-a` is strongly advised (to support GIS-style visualizations of slices), the code automatically tests the
+provided postal address to make sure it is resolvable into Lat/Lon coordinates.
 
 ### scan_net.py
 

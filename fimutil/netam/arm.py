@@ -26,6 +26,13 @@ class NetworkARM:
         else:
             self.sr_pce = None
         self.valid_ipv4_links = None
+        self.sites_metadata = None
+        if 'sites_config' in self.config:
+            sites_config_file = self.config['sites_config']
+            if not os.path.isfile(sites_config_file):
+                raise NetAmArmError('sites_config file does not exists at: ' + sites_config_file)
+            with open(sites_config_file, 'r') as fd:
+                self.sites_metadata = yload(fd.read(), Loader=FullLoader)
 
     def _get_device_interfaces(self) -> list:
         devs = self.nso.devices()
@@ -58,10 +65,10 @@ class NetworkARM:
             # TODO: get model name from NSO
             model_name = 'NCS 55A1-36H'
             # TODO: get official site name from Ralph (or in switch description string) ?
-            site_name = node_name + '-site'
             re_site = re.findall(r'(\w+)-.+', node_name)
-            if re_site is not None and len(re_site) > 0:
-                site_name = str.upper(re_site[0])
+            if re_site is None or len(re_site) == 0:
+                continue
+            site_name = str.upper(re_site[0])
             node_nid = "node+" + node_name + ":ip+" + node['address']
             switch = self.topology.add_node(name=node_name, model=model_name, site=site_name,
                                             node_id=node_nid, ntype=f.NodeType.Switch,
@@ -69,7 +76,18 @@ class NetworkARM:
                                             labels=f.Labels().set_fields(local_name=node_name, ipv4=node['address']),
                                             stitch_node=True)
             dp_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2,
-                                             node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS, stitch_node=True)
+                                            node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS, stitch_node=True)
+            # add FABIpv4 and FABIpv6 NetworkServices
+            if self.sites_metadata and site_name in self.sites_metadata:
+                site_info = self.sites_metadata[site_name]
+                if 'ipv4_net' in site_info:
+                    ipv4_ns = switch.add_network_service(name=switch.name + '-ipv4-ns', layer=f.Layer.L3,
+                                                        labels=f.Labels().set_fields(ipv4_range=site_info['ipv4_net']),
+                                                        node_id=switch.node_id + '-ipv4-ns', nstype=f.ServiceType.FABNetv4)
+                if 'ipv6_net' in site_info:
+                    ipv6_ns = switch.add_network_service(name=switch.name + '-ipv6-ns', layer=f.Layer.L3,
+                                                         labels=f.Labels().set_fields(ipv6_range=site_info['ipv6_net']),
+                                                         node_id=switch.node_id + '-ipv6-ns', nstype=f.ServiceType.FABNetv6)
             # add ports
             if 'interfaces' in node:
                 for port in node['interfaces']:

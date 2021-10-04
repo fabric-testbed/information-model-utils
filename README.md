@@ -93,11 +93,10 @@ $ scan_net.py -c config_file -m <model name>.graphml --isis-link-validation
 ```
 
 Saves the model into a file indicated with `-m` in GraphML format.
-  
-Optional `-c` points to a YAML configure file with NSO and SR-PCE REST authentication parameters. Without it, default location is $HOME/.netam.conf or /etc/netam.conf. Example below:
 
 Optional `--isis-link-validation` enables verification and validation of active links via checking with SR-PCE for IS-IS adjacency in IPv4 topology. Without it, the model generation will only rely on NSO information.
 
+Optional `-c` points to a YAML configure file with NSO and SR-PCE REST authentication parameters. Without it, default location is $HOME/.netam.conf or /etc/netam.conf. Example below:
 ```
 nso_url: https://192.168.11.222/restconf/data
 nso_user: admin
@@ -107,6 +106,7 @@ sr_pce_user: admin
 sr_pce_pass: xxxxx
 sites_config: ...NetworkController/device-config/ansible/inventory/sites.yaml
 ```
+The `sites_config` yaml file is generated priorly with `NetworkController/device-config/ansible/inventory/fabric_inventory.py --yaml`.
 
 ## Installation
 

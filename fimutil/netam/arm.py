@@ -76,7 +76,7 @@ class NetworkARM:
                                             labels=f.Labels().set_fields(local_name=node_name, ipv4=node['address']),
                                             stitch_node=True)
             dp_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2,
-                                            node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS)
+                                            node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS, stitch_node=True)
             # add FABIpv4 and FABIpv6 NetworkServices
             if self.sites_metadata and site_name in self.sites_metadata:
                 site_info = self.sites_metadata[site_name]

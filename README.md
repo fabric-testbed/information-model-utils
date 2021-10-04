@@ -102,6 +102,7 @@ nso_pass: xxxxx
 sr_pce_url: http://192.168.13.3:8080/topo/subscribe/txt
 sr_pce_user: admin
 sr_pce_pass: xxxxx
+sites_config: ...NetworkController/device-config/ansible/inventory/sites.yaml
 ```
 
 ## Installation

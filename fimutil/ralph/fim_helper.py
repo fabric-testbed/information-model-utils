@@ -313,8 +313,10 @@ def site_to_fim(site: Site, address: str) -> SubstrateTopology:
 
         org.organize()
 
+        logging.debug('Adding shared SR-IOV cards')
         # create VF components
         for k, v in org.get_shared_cards().items():
+            logging.debug(f'Processing {v}')
             parent_macs, parent_bdfs, parent_peers = __convert_pf_list_to_interface_data(v)
             units = 0
             labs = list()
@@ -352,7 +354,9 @@ def site_to_fim(site: Site, address: str) -> SubstrateTopology:
                 port_map[parent_peers[parent_macs.index(parent_mac)]] = intf
 
         # create PF components
+        logging.debug('Adding physical cards')
         for k, v in org.get_dedicated_cards().items():
+            logging.debug(f'Processing {v}')
             macs, bdfs, peers = __convert_pf_list_to_interface_data(v)
             interface_node_ids = list(map(mac_to_node_id, macs))
             labels = list()
@@ -377,6 +381,7 @@ def site_to_fim(site: Site, address: str) -> SubstrateTopology:
                 port_map[peers[macs.index(intf_mac)]] = intf
 
     # create storage
+    logging.debug('Adding storage')
     nas = None
     dp = None
     if site.storage is None:
@@ -390,6 +395,7 @@ def site_to_fim(site: Site, address: str) -> SubstrateTopology:
                             site=site.name, ntype=NodeType.NAS)
 
     # create dataplane switch with interfaces and links back to server ports
+    logging.debug('Adding dataplane switch')
     if site.dp_switch is None:
         logging.warning(f'DP Switch in site {site.name} was not detected/catalogued, unable to continue')
         raise RuntimeError('Unable to continue')

@@ -75,19 +75,29 @@ class NetworkARM:
                                             capacities=f.Capacities().set_fields(unit=1),
                                             labels=f.Labels().set_fields(local_name=node_name, ipv4=node['address']),
                                             stitch_node=True)
-            dp_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2,
-                                            node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS, stitch_node=True)
-            # add FABIpv4 and FABIpv6 NetworkServices
+            l2_ns_labs = f.Labels()
+            # add FABIpv4 and FABIpv6 NetworkService
             if self.sites_metadata and site_name in self.sites_metadata:
                 site_info = self.sites_metadata[site_name]
+                if 'l2_vlan_range' in site_info:
+                    l2_ns_labs.set_fields(vlan_range=site_info['l2_vlan_range'])
+                ipv4_ns_labs = f.Labels()
                 if 'ipv4_net' in site_info:
-                    ipv4_ns = switch.add_network_service(name=switch.name + '-ipv4-ns', layer=f.Layer.L3,
-                                                        labels=f.Labels().set_fields(ipv4_range=site_info['ipv4_net']),
+                    ipv4_ns_labs.set_fields(ipv4_subnet=site_info['ipv4_net'])
+                if 'ipv4_vlan_range' in site_info:
+                    ipv4_ns_labs.set_fields(vlan_range=site_info['ipv4_vlan_range'])
+                ipv4_ns = switch.add_network_service(name=switch.name + '-ipv4-ns', layer=f.Layer.L3, labels=ipv4_ns_labs,
                                                         node_id=switch.node_id + '-ipv4-ns', nstype=f.ServiceType.FABNetv4)
+                ipv6_ns_labs = f.Labels()
                 if 'ipv6_net' in site_info:
-                    ipv6_ns = switch.add_network_service(name=switch.name + '-ipv6-ns', layer=f.Layer.L3,
-                                                         labels=f.Labels().set_fields(ipv6_range=site_info['ipv6_net']),
+                    ipv6_ns_labs.set_fields(ipv6_subnet=site_info['ipv6_net'])
+                if 'ipv6_vlan_range' in site_info:
+                    ipv6_ns_labs.set_fields(vlan_range=site_info['ipv6_vlan_range'])
+                ipv6_ns = switch.add_network_service(name=switch.name + '-ipv6-ns', layer=f.Layer.L3, labels=ipv6_ns_labs,
                                                          node_id=switch.node_id + '-ipv6-ns', nstype=f.ServiceType.FABNetv6)
+            # add L2 NetworkService
+            l2_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2, labels=l2_ns_labs,
+                                            node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS, stitch_node=True)
             # add ports
             if 'interfaces' in node:
                 for port in node['interfaces']:
@@ -116,7 +126,7 @@ class NetworkARM:
                             port_labs.set_fields(local_name=port_name, ipv6=ipv6_addr_ip)
                             # only take the first
                             break
-                    sp = dp_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
+                    sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
                                              node_id=port_nid, labels=port_labs,
                                              capacities=port_caps)
                     if port_nid in port_ipv4net_map:

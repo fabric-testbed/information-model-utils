@@ -72,56 +72,30 @@ class NetworkARM:
             node_nid = "node+" + node_name + ":ip+" + node['address']
             switch = self.topology.add_node(name=node_name, model=model_name, site=site_name,
                                             node_id=node_nid, ntype=f.NodeType.Switch,
-                                            capacities=f.Capacities().set_fields(unit=1),
-                                            labels=f.Labels().set_fields(local_name=node_name, ipv4=node['address']),
+                                            capacities=f.Capacities(unit=1),
+                                            labels=f.Labels(local_name=node_name, ipv4=node['address']),
                                             stitch_node=True)
             l2_ns_labs = f.Labels()
-            stitch_facility_ports_map = {}
+            site_info = None
             # add FABIpv4 and FABIpv6 NetworkService
             if self.sites_metadata and site_name in self.sites_metadata:
                 site_info = self.sites_metadata[site_name]
                 if 'l2_vlan_range' in site_info:
-                    l2_ns_labs.set_fields(vlan_range=site_info['l2_vlan_range'])
+                    l2_ns_labs = f.Labels.update(l2_ns_labs, vlan_range=site_info['l2_vlan_range'])
                 ipv4_ns_labs = f.Labels()
                 if 'ipv4_net' in site_info:
-                    ipv4_ns_labs.set_fields(ipv4_subnet=site_info['ipv4_net'])
+                    ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, ipv4_subnet=site_info['ipv4_net'])
                 if 'ipv4_vlan_range' in site_info:
-                    ipv4_ns_labs.set_fields(vlan_range=site_info['ipv4_vlan_range'])
+                    ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, vlan_range=site_info['ipv4_vlan_range'])
                 ipv4_ns = switch.add_network_service(name=switch.name + '-ipv4-ns', layer=f.Layer.L3, labels=ipv4_ns_labs,
                                                         node_id=switch.node_id + '-ipv4-ns', nstype=f.ServiceType.FABNetv4)
                 ipv6_ns_labs = f.Labels()
                 if 'ipv6_net' in site_info:
-                    ipv6_ns_labs.set_fields(ipv6_subnet=site_info['ipv6_net'])
+                    ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, ipv6_subnet=site_info['ipv6_net'])
                 if 'ipv6_vlan_range' in site_info:
-                    ipv6_ns_labs.set_fields(vlan_range=site_info['ipv6_vlan_range'])
+                    ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, vlan_range=site_info['ipv6_vlan_range'])
                 ipv6_ns = switch.add_network_service(name=switch.name + '-ipv6-ns', layer=f.Layer.L3, labels=ipv6_ns_labs,
                                                          node_id=switch.node_id + '-ipv6-ns', nstype=f.ServiceType.FABNetv6)
-                # add facility_ports based on stitcihng metadata
-                if 'facility_ports' in site_info:
-                    for facility_name, stitch_info in site_info['facility_ports'].items():
-                        if 'peer' not in stitch_info:
-                            raise NetAmArmError('no peer / stitch_port defined for facility_port: ' + facility_name)
-                        stitch_port_name = stitch_info['peer']
-                        if stitch_port_name not in stitch_facility_ports_map:
-                            stitch_facility_ports_map[stitch_port_name] = []
-                        # build facility_port out of stitch_info
-                        facility_port_labs = f.Labels()
-                        if 'vlan_range' in stitch_info:
-                            facility_port_labs.set_fields(vlan_range=stitch_info['vlan_range'])
-                        if 'ipv4_net' in stitch_info:
-                            facility_port_labs.set_fields(ipv4_subnet=stitch_info['ipv4_net'])
-                        if 'ipv6_net' in stitch_info:
-                            facility_port_labs.set_fields(ipv6_subnet=stitch_info['ipv6_net'])
-                        if 'local_name' in stitch_info:
-                            facility_port_labs.set_fields(local_name=stitch_info['local_name'])
-                        facility_port_caps = f.Capacities()
-                        if 'mtu' in stitch_info:
-                            facility_port_caps.set_fields(mtu=stitch_info['mtu'])
-                        if 'bandwidth' in stitch_info:
-                            facility_port_caps.set_fields(bw=stitch_info['bandwidth'])
-                        facility_port = self.topology.add_facility_port(name=facility_name, node_id=f'{facility_name}-nid',
-                                    peer=stitch_port_name, labels=facility_port_labs, capacities=facility_port_caps)
-                        stitch_facility_ports_map['stitch_port'].append(facility_port)
 
             # add L2 NetworkService
             l2_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2, labels=l2_ns_labs,
@@ -134,16 +108,14 @@ class NetworkARM:
                     port_nid = f"port+{node_name}:{port_name}"
                     speed_gbps = int(int(port['speed']) / 1000000000)
                     # add capabilities
-                    port_caps = f.Capacities()
-                    port_caps.set_fields(bw=speed_gbps)
+                    port_caps = f.Capacities(bw=speed_gbps)
                     # add labels (vlan ??)
-                    port_labs = f.Labels()
-                    port_labs.set_fields(local_name=port_name, mac=port_mac)
+                    port_labs = f.Labels(local_name=port_name, mac=port_mac)
                     if 'ietf-ip:ipv4' in port and 'address' in port['ietf-ip:ipv4']:
                         for ipv4_addr in port['ietf-ip:ipv4']['address']:
                             ipv4_addr_ip = ipv4_addr['ip']
                             ipv4_addr_mask = ipv4_addr['netmask']
-                            port_labs.set_fields(local_name=port_name, ipv4=ipv4_addr_ip)
+                            port_labs = f.Labels().update(port_labs, local_name=port_name, ipv4=ipv4_addr_ip)
                             port_ipv4net_map[port_nid] = {"ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
                             # only take the first
                             break
@@ -151,7 +123,7 @@ class NetworkARM:
                         for ipv6_addr in port['ietf-ip:ipv6']['address']:
                             ipv6_addr_ip = ipv6_addr['ip']
                             ipv6_addr_prefix_len = ipv6_addr['prefix-length']
-                            port_labs.set_fields(local_name=port_name, ipv6=ipv6_addr_ip)
+                            port_labs = f.Labels().update(port_labs, local_name=port_name, ipv6=ipv6_addr_ip)
                             # only take the first
                             break
                     sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
@@ -161,14 +133,39 @@ class NetworkARM:
                         port_ipv4net_map[port_nid]["interface"] = sp
                     # add external facility stitching links
                     # refer to port_name as stitch_port
-                    if port_name in stitch_facility_ports_map:
-                        facility_ports = stitch_facility_ports_map[port_name].append(sp)
-                        # build facility link
-                        link_nid = f'{port_nid}-patch-link'
-                        link = self.topology.add_link(name=f'{port_nid}-patch-link', ltype=f.LinkType.L2Path,
-                                                      layer=f.Layer.L2,
-                                                      interfaces=facility_ports,
-                                                      node_id=link_nid)
+
+                    # add facility_ports based on stitcihng metadata
+                    if site_info and 'facility_ports' in site_info:
+                        for facility_name, stitch_info in site_info['facility_ports'].items():
+                            if 'stitch_port' not in stitch_info:
+                                raise NetAmArmError('no peer / stitch_port defined for facility_port: ' + facility_name)
+                            stitch_port_name = stitch_info['stitch_port']
+                            if stitch_port_name != port_name:
+                                continue
+                            # build facility_port out of stitch_info
+                            facility_port_labs = f.Labels()
+                            if 'vlan_range' in stitch_info:
+                                facility_port_labs = f.Labels.update(facility_port_labs,
+                                                                     vlan_range=stitch_info['vlan_range'])
+                            if 'ipv4_net' in stitch_info:
+                                facility_port_labs = f.Labels.update(facility_port_labs,
+                                                                     ipv4_subnet=stitch_info['ipv4_net'])
+                            if 'ipv6_net' in stitch_info:
+                                facility_port_labs = f.Labels.update(facility_port_labs,
+                                                                     ipv6_subnet=stitch_info['ipv6_net'])
+                            if 'local_port' in stitch_info:
+                                facility_port_labs = f.Labels.update(facility_port_labs,
+                                                                     local_name=stitch_info['local_port'])
+                            facility_port_caps = f.Capacities()
+                            if 'mtu' in stitch_info:
+                                facility_port_caps = f.Labels.update(facility_port_caps, mtu=stitch_info['mtu'])
+                            if 'bandwidth' in stitch_info:
+                                facility_port_caps = f.Labels.update(facility_port_caps, bw=stitch_info['bandwidth'])
+                            self.topology.add_facility_port(name=facility_name,
+                                                            node_id=f'{port_nid}:facility+{facility_name}',
+                                                            peer=sp,
+                                                            labels=facility_port_labs,
+                                                            capacities=facility_port_caps)
 
 
         # add FABRIC Testbed internal links

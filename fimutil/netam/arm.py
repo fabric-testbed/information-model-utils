@@ -73,8 +73,7 @@ class NetworkARM:
             switch = self.topology.add_node(name=node_name, model=model_name, site=site_name,
                                             node_id=node_nid, ntype=f.NodeType.Switch,
                                             capacities=f.Capacities(unit=1),
-                                            labels=f.Labels(local_name=node_name, ipv4=node['address']),
-                                            stitch_node=True)
+                                            labels=f.Labels(local_name=node_name, ipv4=node['address']))
             l2_ns_labs = f.Labels()
             site_info = None
             # add FABIpv4 and FABIpv6 NetworkService
@@ -99,7 +98,7 @@ class NetworkARM:
 
             # add L2 NetworkService
             l2_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2, labels=l2_ns_labs,
-                                            node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS, stitch_node=True)
+                                            node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS)
             # add ports
             if 'interfaces' in node:
                 for port in node['interfaces']:

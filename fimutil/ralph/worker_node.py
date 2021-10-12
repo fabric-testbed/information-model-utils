@@ -2,6 +2,7 @@ import dataclasses
 
 import pyjq
 import logging
+import json
 
 from fimutil.ralph.asset import RalphAsset, RalphAssetType, RalphJSONError, RalphAssetMimatch
 from fimutil.ralph.nvme import NVMeDrive
@@ -73,8 +74,23 @@ class WorkerNode(RalphAsset):
             gpu_index += 1
 
     def __str__(self):
-        ret = super().__str__()
-        return ret + '\n\t' + str(self.model)
+        retl = list()
+        retl.append(str(self.type) + "[" + self.uri + "]" + ": " + json.dumps(self.fields))
+        retl.append('\t' + str(self.model))
+        vfcount = 0
+        for n, comp in self.components.items():
+            if comp.__dict__.get('type', None) is None:
+                # GPU or some other typeless thing
+                retl.append('\t' + n + " " + str(comp))
+            elif comp.type != RalphAssetType.EthernetCardVF:
+                # something with type that isn't a VF
+                retl.append('\t' + n + " " + str(comp))
+            else:
+                # a VF
+                vfcount += 1
+        retl.append(f'\tDetected {vfcount} SR-IOV functions')
+        ret = "\n".join(retl)
+        return ret
 
 
 

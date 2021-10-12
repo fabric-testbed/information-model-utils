@@ -139,7 +139,7 @@ class NetworkARM:
                         for facility_name, stitch_info in site_info['facility_ports'].items():
                             if 'stitch_port' not in stitch_info:
                                 raise NetAmArmError('no peer / stitch_port defined for facility_port: ' + facility_name)
-                            stitch_port_name = stitch_info['stitch_port']
+                            stitch_port_name = stitch_info['stitch_port'].replace(' ', '')
                             if stitch_port_name != port_name:
                                 continue
                             # build facility_port out of stitch_info

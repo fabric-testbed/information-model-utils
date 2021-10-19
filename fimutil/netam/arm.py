@@ -193,7 +193,7 @@ class NetworkARM:
                     port_sp_r = v_r['interface']
                     # add link
                     link_nid = f"link:local-{port_sp.node_id}:remote-{port_sp_r.node_id}"
-                    link = self.topology.add_link(name=f'{port_name} to peer facilities', ltype=f.LinkType.L2Path,
+                    link = self.topology.add_link(name=f'{port_sp.node_id} to {port_sp_r.node_id}', ltype=f.LinkType.L2Path,
                                                   layer=f.Layer.L2,
                                                   interfaces=[port_sp, port_sp_r],
                                                   node_id=link_nid)

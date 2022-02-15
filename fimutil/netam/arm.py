@@ -160,12 +160,16 @@ class NetworkARM:
                                 facility_port_caps = f.Labels.update(facility_port_caps, mtu=stitch_info['mtu'])
                             if 'bandwidth' in stitch_info:
                                 facility_port_caps = f.Labels.update(facility_port_caps, bw=stitch_info['bandwidth'])
-                            self.topology.add_facility_port(name=facility_name,
-                                                            node_id=f'{port_nid}:facility+{facility_name}',
-                                                            peer=sp,
-                                                            labels=facility_port_labs,
-                                                            capacities=facility_port_caps)
-
+                            # create a facility with a VLAN network service and a single FacilityPort interface
+                            fac = self.topology.add_facility(name=facility_name,
+                                                             node_id=f'{port_nid}:facility+{facility_name}',
+                                                             site=facility_name,
+                                                             labels=facility_port_labs, capacities=facility_port_caps)
+                            # connect it to the switch port via link
+                            self.topology.add_link(name=facility_name + '-link',
+                                                   node_id=f'{port_nid}:facility+{facility_name}+link',
+                                                   ltype=f.LinkType.L2Path, # could be Patch too
+                                                   interfaces=[sp, fac.interface_list[0]]) # there is only one interface on the facility
 
         # add FABRIC Testbed internal links
         for k in list(port_ipv4net_map):

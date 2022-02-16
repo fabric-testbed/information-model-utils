@@ -163,7 +163,7 @@ class NetworkARM:
                             # create a facility with a VLAN network service and a single FacilityPort interface
                             fac = self.topology.add_facility(name=facility_name,
                                                              node_id=f'{port_nid}:facility+{facility_name}',
-                                                             site=facility_name,
+                                                             site=site_name,
                                                              labels=facility_port_labs, capacities=facility_port_caps)
                             # connect it to the switch port via link
                             self.topology.add_link(name=facility_name + '-link',

@@ -13,6 +13,10 @@ class NetAmTest(unittest.TestCase):
     def testNsoClient(self):
         nso = NsoClient()
         devs = nso.devices()
+        for dev in devs:
+            dev_name = dev['name']
+            ifaces = nso.isis_interfaces(dev_name)
+            l = len(ifaces)
 
     def testSrPceClient(self):
         sr_pce = SrPceClient()

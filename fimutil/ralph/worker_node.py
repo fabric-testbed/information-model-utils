@@ -75,8 +75,11 @@ class WorkerNode(RalphAsset):
 
     def __str__(self):
         retl = list()
-        retl.append(str(self.type) + "[" + self.uri + "]" + ": " + json.dumps(self.fields))
-        retl.append('\t' + str(self.model))
+        if RalphAsset.PRINT_SUMMARY:
+            retl.append(str(self.type) + " " + self.fields['Name'])
+        else:
+            retl.append(str(self.type) + "[" + self.uri + "]: " + json.dumps(self.fields))
+            retl.append('\t' + str(self.model))
         vfcount = 0
         for n, comp in self.components.items():
             if comp.__dict__.get('type', None) is None:

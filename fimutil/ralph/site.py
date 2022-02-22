@@ -53,11 +53,12 @@ class Site:
         try:
             storage_url = pyjq.one('[ .results[0].url ]', results)[0]
             logging.info(f'Identified storage {storage_url=}')
+            if not storage_url:
+                raise ValueError
+            self.storage = Storage(uri=storage_url, ralph=self.ralph)
+            self.storage.parse()
         except ValueError:
             logging.warning('Unable to find storage node in site, continuing')
-
-        self.storage = Storage(uri=storage_url, ralph=self.ralph)
-        self.storage.parse()
 
         query = {'hostname': f'{self.name.lower()}-data-sw' + self.domain}
         results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
@@ -66,10 +67,12 @@ class Site:
         try:
             dp_switch_url = pyjq.one('[ .results[0].url ]', results)[0]
             logging.info(f'Identified DP switch {dp_switch_url=}')
+            if not dp_switch_url:
+                raise ValueError
+            self.dp_switch = DPSwitch(uri=dp_switch_url, ralph=self.ralph)
+            self.dp_switch.parse()
         except ValueError:
             logging.warning('Unable to find a dataplane switch in site, continuing')
-        self.dp_switch = DPSwitch(uri=dp_switch_url, ralph=self.ralph)
-        self.dp_switch.parse()
 
     def __str__(self):
         assets = list()

@@ -10,6 +10,7 @@ import sys
 
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.site import Site
+from fimutil.ralph.asset import RalphAsset
 
 from fimutil.ralph.fim_helper import site_to_fim
 
@@ -37,6 +38,8 @@ if __name__ == "__main__":
                         help="Provide address for the site")
     parser.add_argument("-n", "--no-ssl", action="store_true",
                         help="Disable SSL server sert validation (use with caution!)")
+    parser.add_argument("--brief", action="store_true",
+                        help="Print only a brief description of assets")
 
     args = parser.parse_args()
 
@@ -74,6 +77,9 @@ if __name__ == "__main__":
     else:
         print('WARNING: you did not provide a site postal address with -a option - '
               'it is strongly recommended that you do.')
+
+    if args.brief:
+        RalphAsset.print_brief_summary()
 
     ralph = RalphURI(token=args.token, base_uri=args.base_uri, disable_ssl=args.no_ssl)
     site = Site(site_name=args.site, ralph=ralph)

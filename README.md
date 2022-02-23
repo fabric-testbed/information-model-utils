@@ -77,11 +77,17 @@ Prints information collected from Ralph
 ```
 $ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -a <street address string> -m <model name>.graphml
 ```
-Saves site model into a file in GraphML format. Both `-p` and `-m` could be used together. If neither is specified
-the site is scanned however no extra output is produced. 
+Saves site model into a file in GraphML format. 
 
 Using `-a` is strongly advised (to support GIS-style visualizations of slices), the code automatically tests the
 provided postal address to make sure it is resolvable into Lat/Lon coordinates.
+
+You can also use `--brief` option with `-p` to have a shorter printout. 
+
+To produce a site JSON file, use `-j` or `--json` followed by a filename.
+
+Options`-p`, `-m` and `-j` could be used together (i.e. to produce a model, a printout and a JSON file). If none is specified
+the site is scanned however no extra output is produced. 
 
 ### scan_net.py
 

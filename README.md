@@ -106,7 +106,7 @@ sr_pce_user: admin
 sr_pce_pass: xxxxx
 sites_config: ...NetworkController/device-config/ansible/inventory/sites.yaml
 ```
-The `sites_config` yaml file is generated priorly with `NetworkController/device-config/ansible/inventory/fabric_inventory.py --yaml`.
+The `sites_config` yaml file is generated priorly with `NetworkController/device-config/ansible/inventory/fabric-cisco-dev.py --yaml`.
 
 ## Installation
 

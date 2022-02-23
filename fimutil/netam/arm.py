@@ -39,10 +39,16 @@ class NetworkARM:
         for dev in devs:
             dev_name = dev['name']
             ifaces = self.nso.interfaces(dev_name)
+            isis_ifaces = self.nso.isis_interfaces(dev_name)
             if ifaces:
                 for iface in list(ifaces):
+                    # skip if not an isis l2 p2p interfaces
+                    is_isis_iface = False
+                    for isis_iface in isis_ifaces:
+                        if iface['name'] == isis_iface['name']:
+                            is_isis_iface = True
                     # only keep interfaces in up status and of "*GigE0/1/2*" pattern
-                    if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d', iface['name']):
+                    if is_isis_iface and iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d', iface['name']):
                         # get rid of 'statistics' attributes
                         iface.pop('statistics', None)
                         continue

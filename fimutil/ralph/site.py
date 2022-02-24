@@ -76,10 +76,22 @@ class Site:
 
     def __str__(self):
         assets = list()
-        if self.storage is not None:
+        if self.storage:
             assets.append(str(self.storage))
-        if self.dp_switch is not None:
+        if self.dp_switch:
             assets.append(str(self.dp_switch))
         for w in self.workers:
             assets.append(str(w))
         return '\n'.join(assets)
+
+    def to_json(self):
+        ret = dict()
+        if self.storage:
+            ret["Storage"] = self.storage.fields
+        if self.dp_switch:
+            ret["DataPlane"] = self.dp_switch.fields
+        n = list()
+        for w in self.workers:
+            n.append(w.to_json())
+        ret["Nodes"] = n
+        return ret

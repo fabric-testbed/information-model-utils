@@ -7,6 +7,7 @@ import argparse
 import traceback
 import logging
 import sys
+import json
 
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.site import Site
@@ -40,6 +41,8 @@ if __name__ == "__main__":
                         help="Disable SSL server sert validation (use with caution!)")
     parser.add_argument("--brief", action="store_true",
                         help="Print only a brief description of assets")
+    parser.add_argument("-j", "--json", action="store",
+                        help="Produce simplified output in JSON format and save to specified file")
 
     args = parser.parse_args()
 
@@ -105,4 +108,7 @@ if __name__ == "__main__":
     if args.print:
         print(site)
 
+    if args.json:
+        with open(args.json, 'w') as f:
+            json.dump(site.to_json(), f, indent=2, sort_keys=True)
 

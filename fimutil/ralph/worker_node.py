@@ -95,6 +95,26 @@ class WorkerNode(RalphAsset):
         ret = "\n".join(retl)
         return ret
 
+    def to_json(self):
+        ret = {
+                'Name': self.fields['Name'],
+                'Model': self.model.fields.copy()
+        }
+        comps = list()
+        for n, comp in self.components.items():
+            if comp.__dict__.get('type') and comp.type != RalphAssetType.EthernetCardVF:
+                d = comp.fields.copy()
+                d['Type'] = str(comp.type)
+                comps.append(d)
+            elif not comp.__dict__.get('type'):
+                # GPU
+                d = comp.__dict__.copy()
+                d['Type'] = str(RalphAssetType.GPU)
+                comps.append(d)
+        ret['Components'] = comps
+        return ret
+
+
 
 
 

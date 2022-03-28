@@ -1,6 +1,5 @@
 astroid==2.4.2
 bleach==3.3.0
-chardet==4.0.0
 colorama==0.4.4
 cycler==0.10.0
 decorator==4.4.2
@@ -12,19 +11,14 @@ jsonpath-ng==1.5.2
 keyring==21.5.0
 kiwisolver==1.3.1
 lazy-object-proxy==1.4.3
-matplotlib==3.3.4
 mccabe==0.6.1
 packaging==20.8
-pipdeptree==1.0.0
 pkginfo==1.6.1
-pluggy==0.13.1
 ply==3.11
 py==1.10.0
 pyjq==2.5.1
 pyparsing==2.4.7
 python-dateutil==2.8.1
-pytz==2020.1
-PyYAML==5.4
 recordclass==0.14.3
 six==1.15.0
 tqdm==4.54.1
@@ -33,4 +27,4 @@ urllib3==1.26.5
 webencodings==0.5.1
 wrapt==1.12.1
 zipp==3.4.0
-fabric_fim==1.1.2
+fabric_fim==1.2rc7

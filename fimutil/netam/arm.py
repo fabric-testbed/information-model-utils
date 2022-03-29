@@ -48,9 +48,10 @@ class NetworkARM:
                         if iface['name'] == isis_iface['name']:
                             is_isis_iface = True
                     # only keep interfaces in up status and of "*GigE0/1/2*" pattern
-                    if is_isis_iface and iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d', iface['name']):
-                        # get rid of 'statistics' attributes
-                        iface.pop('statistics', None)
+                    if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d', iface['name']):
+                        iface.pop('statistics', None)  # remove 'statistics' attributes
+                        if is_isis_iface:
+                            iface['isis'] = True  # mark ISIS interface
                         continue
                     ifaces.remove(iface)
                 dev['interfaces'] = ifaces

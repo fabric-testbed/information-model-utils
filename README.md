@@ -136,5 +136,10 @@ $ python scan_worker.py <options>
 Note that to install PyJQ dependency as part of requirements you need to have `automake` installed on your system. So
 `yum install automake` or `brew install automake` or similar. 
 
+### Building and packaging
 
-
+Use 
+```
+$ python -m build
+$ twine upload dist/*
+```

@@ -159,6 +159,9 @@ class NetworkARM:
                             if 'ipv6_net' in stitch_info:
                                 facility_port_labs = f.Labels.update(facility_port_labs,
                                                                      ipv6_subnet=stitch_info['ipv6_net'])
+                            if 'local_device' in stitch_info:
+                                facility_port_labs = f.Labels.update(facility_port_labs,
+                                                                     device_name=stitch_info['local_port'])
                             if 'local_port' in stitch_info:
                                 facility_port_labs = f.Labels.update(facility_port_labs,
                                                                      local_name=stitch_info['local_port'])
@@ -172,6 +175,8 @@ class NetworkARM:
                                                              node_id=f'{port_nid}:facility+{facility_name}',
                                                              site=site_name,
                                                              labels=facility_port_labs, capacities=facility_port_caps)
+                            if 'description' in stitch_info:
+                                fac.interface_list[0].details = stitch_info['description']
                             # connect it to the switch port via link
                             self.topology.add_link(name=facility_name + '-link',
                                                    node_id=f'{port_nid}:facility+{facility_name}+link',

@@ -77,11 +77,17 @@ Prints information collected from Ralph
 ```
 $ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -a <street address string> -m <model name>.graphml
 ```
-Saves site model into a file in GraphML format. Both `-p` and `-m` could be used together. If neither is specified
-the site is scanned however no extra output is produced. 
+Saves site model into a file in GraphML format. 
 
 Using `-a` is strongly advised (to support GIS-style visualizations of slices), the code automatically tests the
 provided postal address to make sure it is resolvable into Lat/Lon coordinates.
+
+You can also use `--brief` option with `-p` to have a shorter printout. 
+
+To produce a site JSON file, use `-j` or `--json` followed by a filename.
+
+Options`-p`, `-m` and `-j` could be used together (i.e. to produce a model, a printout and a JSON file). If none is specified
+the site is scanned however no extra output is produced. 
 
 ### scan_net.py
 
@@ -106,7 +112,7 @@ sr_pce_user: admin
 sr_pce_pass: xxxxx
 sites_config: ...NetworkController/device-config/ansible/inventory/sites.yaml
 ```
-The `sites_config` yaml file is generated priorly with `NetworkController/device-config/ansible/inventory/fabric_inventory.py --yaml`.
+The `sites_config` yaml file is generated priorly with `NetworkController/device-config/ansible/inventory/fabric-cisco-dev.py --yaml`.
 
 ## Installation
 
@@ -130,5 +136,10 @@ $ python scan_worker.py <options>
 Note that to install PyJQ dependency as part of requirements you need to have `automake` installed on your system. So
 `yum install automake` or `brew install automake` or similar. 
 
+### Building and packaging
 
-
+Use 
+```
+$ python -m build
+$ twine upload dist/*
+```

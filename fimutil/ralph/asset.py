@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List, Dict, Any
 import re
 import logging
 
@@ -37,6 +37,7 @@ class RalphAsset(ABC):
     # These are fields that require regex matching from the fields extracted in FIELD_MAP
     # unmatched regexes simply leave the field unfilled without generating errors
     REGEX_FIELDS = {}
+    PRINT_SUMMARY = False
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         self.uri = uri
@@ -83,13 +84,21 @@ class RalphAsset(ABC):
 
     def __str__(self):
         ret = list()
-        ret.append(str(self.type) + "[" + self.uri + "]" + ": " + json.dumps(self.fields))
+        if RalphAsset.PRINT_SUMMARY:
+            ret.append(str(self.type) + ": " + (self.fields["Description"] if self.fields.get('Description')
+                                                else self.fields.get("Name", "")))
+        else:
+            ret.append(str(self.type) + "[" + self.uri + "]: " + json.dumps(self.fields))
         for n, comp in self.components.items():
             ret.append('\t' + n + " " + str(comp))
         return "\n".join(ret)
 
     def __repr__(self):
         return self.__str__()
+
+    @classmethod
+    def print_brief_summary(cls):
+        cls.PRINT_SUMMARY = True
 
 
 class RalphJSONError(Exception):

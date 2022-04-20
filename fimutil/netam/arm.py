@@ -39,12 +39,19 @@ class NetworkARM:
         for dev in devs:
             dev_name = dev['name']
             ifaces = self.nso.interfaces(dev_name)
+            isis_ifaces = self.nso.isis_interfaces(dev_name)
             if ifaces:
                 for iface in list(ifaces):
+                    # skip if not an isis l2 p2p interfaces
+                    is_isis_iface = False
+                    for isis_iface in isis_ifaces:
+                        if iface['name'] == isis_iface['name']:
+                            is_isis_iface = True
                     # only keep interfaces in up status and of "*GigE0/1/2*" pattern
                     if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d', iface['name']):
-                        # get rid of 'statistics' attributes
-                        iface.pop('statistics', None)
+                        iface.pop('statistics', None)  # remove 'statistics' attributes
+                        if is_isis_iface:
+                            iface['isis'] = True  # mark ISIS interface
                         continue
                     ifaces.remove(iface)
                 dev['interfaces'] = ifaces
@@ -152,6 +159,9 @@ class NetworkARM:
                             if 'ipv6_net' in stitch_info:
                                 facility_port_labs = f.Labels.update(facility_port_labs,
                                                                      ipv6_subnet=stitch_info['ipv6_net'])
+                            if 'local_device' in stitch_info:
+                                facility_port_labs = f.Labels.update(facility_port_labs,
+                                                                     device_name=stitch_info['local_port'])
                             if 'local_port' in stitch_info:
                                 facility_port_labs = f.Labels.update(facility_port_labs,
                                                                      local_name=stitch_info['local_port'])
@@ -160,12 +170,18 @@ class NetworkARM:
                                 facility_port_caps = f.Labels.update(facility_port_caps, mtu=stitch_info['mtu'])
                             if 'bandwidth' in stitch_info:
                                 facility_port_caps = f.Labels.update(facility_port_caps, bw=stitch_info['bandwidth'])
-                            self.topology.add_facility_port(name=facility_name,
-                                                            node_id=f'{port_nid}:facility+{facility_name}',
-                                                            peer=sp,
-                                                            labels=facility_port_labs,
-                                                            capacities=facility_port_caps)
-
+                            # create a facility with a VLAN network service and a single FacilityPort interface
+                            fac = self.topology.add_facility(name=facility_name,
+                                                             node_id=f'{port_nid}:facility+{facility_name}',
+                                                             site=site_name,
+                                                             labels=facility_port_labs, capacities=facility_port_caps)
+                            if 'description' in stitch_info:
+                                fac.interface_list[0].details = stitch_info['description']
+                            # connect it to the switch port via link
+                            self.topology.add_link(name=facility_name + '-link',
+                                                   node_id=f'{port_nid}:facility+{facility_name}+link',
+                                                   ltype=f.LinkType.L2Path, # could be Patch too
+                                                   interfaces=[sp, fac.interface_list[0]]) # there is only one interface on the facility
 
         # add FABRIC Testbed internal links
         for k in list(port_ipv4net_map):

@@ -53,6 +53,24 @@ class NsoClient:
             # raise NetAmNsoError(f"GET: {self.nso_url}/{ep}: 'ietf-interfaces:interface' unfound in response")
         return ret_json['ietf-interfaces:interface']
 
+    def isis_interfaces(self, device_name) -> list:
+        # base = f"tailf-ncs:devices/device={device_name}/live-status/ietf-interfaces:interfaces-state/interface"
+        # params = "fields=name;admin-status;phys-address;speed;ietf-ip:ipv4;ietf-ip:ipv6"
+        # ep = f"{base}?{params}"
+        ep = f"tailf-ncs:devices/device={device_name}/config/tailf-ned-cisco-ios-xr:router/isis/tag"
+        ret_json = self._get(ep)
+        if 'tailf-ned-cisco-ios-xr:tag' not in ret_json:
+            return None
+        tags = ret_json['tailf-ned-cisco-ios-xr:tag']
+        if type(tags) is not list or len(tags) < 1:
+            return None
+            # raise NetAmNsoError(f"GET: {self.nso_url}/{ep}: 'ietf-interfaces:interface' unfound in response")
+        ifaces = tags[0]['interface']
+        for iface in list(ifaces):
+            if 'circuit-type' not in iface or iface['circuit-type'] != 'level-2-only' or 'point-to-point' not in iface:
+                ifaces.remove(iface)
+        return ifaces
+
     def get_config(self, config_file):
         if not config_file:
             config_file = os.getenv('HOME') + '/.netam.conf'

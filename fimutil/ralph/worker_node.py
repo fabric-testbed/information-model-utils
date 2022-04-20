@@ -75,8 +75,11 @@ class WorkerNode(RalphAsset):
 
     def __str__(self):
         retl = list()
-        retl.append(str(self.type) + "[" + self.uri + "]" + ": " + json.dumps(self.fields))
-        retl.append('\t' + str(self.model))
+        if RalphAsset.PRINT_SUMMARY:
+            retl.append(str(self.type) + " " + self.fields['Name'])
+        else:
+            retl.append(str(self.type) + "[" + self.uri + "]: " + json.dumps(self.fields))
+            retl.append('\t' + str(self.model))
         vfcount = 0
         for n, comp in self.components.items():
             if comp.__dict__.get('type', None) is None:
@@ -91,6 +94,26 @@ class WorkerNode(RalphAsset):
         retl.append(f'\tDetected {vfcount} SR-IOV functions')
         ret = "\n".join(retl)
         return ret
+
+    def to_json(self):
+        ret = {
+                'Name': self.fields['Name'],
+                'Model': self.model.fields.copy()
+        }
+        comps = list()
+        for n, comp in self.components.items():
+            if comp.__dict__.get('type') and comp.type != RalphAssetType.EthernetCardVF:
+                d = comp.fields.copy()
+                d['Type'] = str(comp.type)
+                comps.append(d)
+            elif not comp.__dict__.get('type'):
+                # GPU
+                d = comp.__dict__.copy()
+                d['Type'] = str(RalphAssetType.GPU)
+                comps.append(d)
+        ret['Components'] = comps
+        return ret
+
 
 
 

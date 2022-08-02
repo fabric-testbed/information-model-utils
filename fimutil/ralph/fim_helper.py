@@ -441,5 +441,5 @@ if __name__ == "__main__":
                      base_uri='https://url/api/')
     site = Site(site_name='LBNL', ralph=ralph)
     site.catalog()
-    topo = site_to_fim(site)
+    topo = site_to_fim(site, '123 Frienship Street')
     print(topo)

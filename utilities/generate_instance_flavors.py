@@ -11,11 +11,24 @@ import json
 # steps/increments of what is possible
 # Disk and Ram are counted in GB
 
-CPUs = [1, 2, 4, 8, 16, 32]
+CPUs = [x for x in range(4, 66, 2)]
 Disk = [10, 100, 500, 2000]
-RAM = [4, 8, 16, 32, 64, 128]
+RAM = [4, 8, 16, 24, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384]
 
 SPECIAL_FLAVORS = [
+    [1, 2, 10],
+    [1, 4, 10],
+    [1, 4, 100],
+    [1, 4, 500],
+    [1, 4, 2000],
+    [2, 2, 10],
+    [2, 2, 100],
+    [2, 4, 10],
+    [2, 4, 100],
+    [2, 8, 10],
+    [2, 8, 100],
+    [2, 8, 500],
+    [2, 8, 2000],
     [64, 384, 4000]
 ]
 
@@ -27,7 +40,7 @@ def _get_instance_name(c, m, d):
     return ".".join(['fabric', 'c' + str(c), 'm' + str(m), 'd' + str(d)])
 
 
-def generate_csv(file, dialect, delimiter):
+def generate_csv(file, dialect, delimiter) -> int:
     """
     Output a CSV
     """
@@ -36,37 +49,46 @@ def generate_csv(file, dialect, delimiter):
                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
         spamwriter.writerow(['Flavor Name', 'CPUs', 'RAM', 'Disk'])
         # all possible combinations
+        cnt = 0
         for c in CPUs:
             for m in RAM:
                 for d in Disk:
                     flavor_name = _get_instance_name(c, m, d)
                     spamwriter.writerow([flavor_name, c, m, d])
+                    cnt += 1
 
         for sf in SPECIAL_FLAVORS:
             c, m, d = sf
             flavor_name = _get_instance_name(c, m, d)
             spamwriter.writerow([flavor_name, c, m, d])
+            cnt += 1
 
+    return cnt
 
-def generate_json(file):
+def generate_json(file) -> int:
     """
     Output a JSON
     """
     obj = dict()
     # all possible combinations
+    cnt = 0
     for c in CPUs:
         for m in RAM:
             for d in Disk:
                 flavor_name = _get_instance_name(c, m, d)
                 obj[flavor_name] = {"core": c, "ram": m, "disk": d}
+                cnt += 1
 
     for sf in SPECIAL_FLAVORS:
         c, m, d = sf
         flavor_name = _get_instance_name(c, m, d)
         obj[flavor_name] = {"core": c, "ram": m, "disk": d}
+        cnt += 1
 
     with open(file, 'w+') as f:
         json.dump(obj, f)
+
+    return cnt
 
 
 if __name__ == "__main__":
@@ -92,13 +114,13 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     if args.format.lower() == "csv":
-        generate_csv(args.file, args.dialect, args.delimiter)
+        cnt = generate_csv(args.file, args.dialect, args.delimiter)
     elif args.format.lower() == "json":
-        generate_json(args.file)
+        cnt = generate_json(args.file)
     else:
         print(f'Unknown format {args.format}, exiting')
         sys.exit(-1)
 
-    print(f'Output written to {args.file}')
+    print(f'Output of {cnt} entries written to {args.file}')
 
 

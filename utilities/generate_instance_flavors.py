@@ -65,9 +65,10 @@ def generate_csv(file, dialect, delimiter) -> int:
 
     return cnt
 
+
 def generate_json(file) -> int:
     """
-    Output a JSON
+    Output a JSON file in a format consumable by FIM
     """
     obj = dict()
     # all possible combinations
@@ -91,6 +92,38 @@ def generate_json(file) -> int:
     return cnt
 
 
+def generate_json_ansible(file, starting_id=10) -> int:
+    """
+    Generate JSON in a format consumable by ansible tasks
+    """
+    flavors = dict()
+    obj = {'flavors': flavors}
+
+    # all possible combinations
+    cnt = 0
+    flavor_id = starting_id
+    for c in CPUs:
+        for m in RAM:
+            for d in Disk:
+                flavor_name = _get_instance_name(c, m, d)
+                flavor_key = 'flavor' + str(flavor_id)
+                flavors[flavor_key] = {"vcpu": c, "ram": m*1024, "disk": d, "name": flavor_name, "id": flavor_id}
+                cnt += 1
+                flavor_id += 1
+
+    for sf in SPECIAL_FLAVORS:
+        c, m, d = sf
+        flavor_name = _get_instance_name(c, m, d)
+        obj[flavor_name] = {"vcpu": c, "ram": m*1024, "disk": d, "name": flavor_name, "id": flavor_id}
+        cnt += 1
+        flavor_id += 1
+
+    with open(file, 'w+') as f:
+        json.dump(obj, f)
+
+    return cnt
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -99,7 +132,7 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--file", action="store",
                         help="output CSV file")
     parser.add_argument("-o", "--format", action="store",
-                        help="CSV, JSON, defaults to CSV",
+                        help="CSV, JSON, JSONA (JSON for Ansible), defaults to CSV",
                         default='csv')
     parser.add_argument("-d", "--delimiter", action="store",
                         help="Delimiter character to use for CSV format", default=',')
@@ -117,6 +150,8 @@ if __name__ == "__main__":
         cnt = generate_csv(args.file, args.dialect, args.delimiter)
     elif args.format.lower() == "json":
         cnt = generate_json(args.file)
+    elif args.format.lower() == "jsona":
+        cnt = generate_json_ansible(args.file, 10)
     else:
         print(f'Unknown format {args.format}, exiting')
         sys.exit(-1)

@@ -114,7 +114,8 @@ def generate_json_ansible(file, starting_id=10) -> int:
     for sf in SPECIAL_FLAVORS:
         c, m, d = sf
         flavor_name = _get_instance_name(c, m, d)
-        obj[flavor_name] = {"vcpu": c, "ram": m*1024, "disk": d, "name": flavor_name, "id": flavor_id}
+        flavor_key = 'flavor' + str(flavor_id)
+        flavors[flavor_key] = {"vcpu": c, "ram": m*1024, "disk": d, "name": flavor_name, "id": flavor_id}
         cnt += 1
         flavor_id += 1
 

@@ -114,6 +114,29 @@ sites_config: ...NetworkController/device-config/ansible/inventory/sites.yaml
 ```
 The `sites_config` yaml file is generated priorly with `NetworkController/device-config/ansible/inventory/fabric-cisco-dev.py --yaml`.
 
+### generate_instance_flavors.py
+
+A utility to generate a list of OpenStack VM flavors based on permutations of CPU, RAM and disk.
+
+Can output the results in 3 flavors: CSV, JSON for FIM (usable as part of FIM catalog datafile)
+and JSON Ansible usable for Ansible tasks that load flavors into OpenStack. 
+```
+usage: generate_instance_flavors.py [-h] [-f FILE] [-o FORMAT] [-d DELIMITER] [-i DIALECT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f FILE, --file FILE  output CSV file
+  -o FORMAT, --format FORMAT
+                        CSV, JSON, JSONA (JSON for Ansible), defaults to CSV
+  -d DELIMITER, --delimiter DELIMITER
+                        Delimiter character to use for CSV format
+  -i DIALECT, --dialect DIALECT
+                        CSV dialect (excel, unix), defaults to excel
+```
+Typical usage is
+```
+$ generate_instance_flavors.py -o JSONA -f flavors.json
+```
 ## Installation
 
 ### For use

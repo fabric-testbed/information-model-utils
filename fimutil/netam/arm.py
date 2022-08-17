@@ -116,6 +116,13 @@ class NetworkARM:
                                                      labels=ipv6_ns_labs,
                                                      node_id=switch.node_id + '-ipv6-ns', nstype=f.ServiceType.FABNetv6)
 
+                l3vpn_ns_labs = f.Labels()
+                l3vpn_ns_labs = f.Labels.update(l3vpn_ns_labs, asn='398900')
+                # TODO: add more labels (per-site vlan_range and ipv4_range for bgp peering)
+                l3vpn_ns = switch.add_network_service(name=switch.name + '-l3vpn-ns', layer=f.Layer.L3,
+                                                     labels=l3vpn_ns_labs,
+                                                     node_id=switch.node_id + '-l3vpn-ns', nstype=f.ServiceType.L3VPN)
+
             # add L2 NetworkService
             l2_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2, labels=l2_ns_labs,
                                                node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS)

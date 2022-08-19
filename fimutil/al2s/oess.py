@@ -22,6 +22,7 @@ class OessClient:
         self.oess_url = self.config['oess_url']
         self.oess_user = self.config['oess_user']
         self.oess_pass = self.config['oess_pass']
+        self.oess_group = self.config['oess_group']
         self.json_topology = None
 
     def _get(self, ep) -> dict:

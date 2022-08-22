@@ -25,7 +25,26 @@ class OessARM:
             with open(sites_config_file, 'r') as fd:
                 self.sites_metadata = yload(fd.read(), Loader=FullLoader)
 
+    def build_topology(self) -> None:
+        # start topology model
+        self.topology = f.SubstrateTopology()
+        model_name = 'AL2S OESS'
+        site_name = "Internet2"
+        node_name = "AL2S"
+        node_nid = "node+" + node_name
+        switch = self.topology.add_node(name=node_name, model=model_name, site=site_name,
+                                        node_id=node_nid, ntype=f.NodeType.Switch,
+                                        capacities=f.Capacities(unit=1),
+                                        labels=f.Labels(local_name=node_name))
+        # add L2 NetworkService
+        l2_ns_labs = f.Labels()
+        # ? add AL2S site-wide labels
+        l2_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2, labels=l2_ns_labs,
+                                           node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS)
 
+
+        interfaces = self.oess.interfaces()
+        for
 
 class OessAmArmError(Exception):
     def __init__(self, msg: str):

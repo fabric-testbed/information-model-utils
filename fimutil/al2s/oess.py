@@ -36,10 +36,15 @@ class OessClient:
         except Exception as e:
             raise Al2sAmOessError(f"GET: {url}: {e}")
 
-    # TODO: @Liang return a list of all AL2S interfaces (EndPoints) with attributes including
-    #   1. VLAN range
-    #   2. description
-    #   3. Other attributes like indication of Cloud entity (if any)
+    # TODO: @Liang return a list of all AL2S interfaces (EndPoints) with attributes
+    """
+        {   "endpoint": "urn:abc:xyz",
+            "vlan_range": "101-110",
+            "description": "",
+            other ...
+        }
+    """
+
     def interfaces(self, device_name) -> list:
         pass
 

@@ -36,16 +36,19 @@ class OessClient:
         except Exception as e:
             raise Al2sAmOessError(f"GET: {url}: {e}")
 
-    # TODO: @Liang return a list of all AL2S interfaces (EndPoints) with attributes
+    # TODO: @Liang return a list of all AL2S EndPoints (interfaces / ports) with attributes
     """
-        {   "endpoint": "urn:abc:xyz",
-            "vlan_range": "101-110",
+        {   "name": "node_name:port_name:...",
             "description": "",
+            "device_name": "",
+            "interface_name": "",
+            "capacity": "100", # in gbps
+            "vlan_range": "101-110",
+            cloud peering related ? ...
             other ...
         }
     """
-
-    def interfaces(self, device_name) -> list:
+    def endpoints(self, device_name) -> list:
         pass
 
     # reuse .netam.conf as the default config file

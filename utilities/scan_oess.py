@@ -7,7 +7,7 @@ import argparse
 import logging
 import sys
 
-from fimutil.netam.arm import NetworkARM
+from fimutil.al2s.arm import OessARM as A2lsARM
 
 if __name__ == "__main__":
 

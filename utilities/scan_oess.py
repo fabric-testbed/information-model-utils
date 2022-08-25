@@ -7,7 +7,7 @@ import argparse
 import logging
 import sys
 
-from fimutil.al2s.arm import OessARM as A2lsARM
+from fimutil.al2s.arm import OessARM
 
 if __name__ == "__main__":
 
@@ -32,7 +32,7 @@ if __name__ == "__main__":
         print('You must specify the name of the file to save the model into', file=sys.stderr)
         sys.exit(-1)
 
-    arm = A2lsARM(config_file=args.config)
+    arm = OessARM(config_file=args.config)
 
     logging.info('Querying OESS')
     arm.build_topology()

@@ -1,7 +1,6 @@
 import unittest
 
 from fimutil.al2s.oess import OessClient
-from numpy import empty
 
 
 class Al2sTest(unittest.TestCase):

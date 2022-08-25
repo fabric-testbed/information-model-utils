@@ -135,7 +135,7 @@ class OessClient:
                 endpoint['description'] = item['description']
                 endpoint['device_name'] = item['node_name']
                 endpoint['interface_name'] = item['interface_name']
-                endpoint['capacity'] = str(float(self.interface(item['interface_id'])['bandwidth'])/1000.0)
+                endpoint['capacity'] = str(int(float(self.interface(item['interface_id'])['bandwidth'])/1000.0))
                 endpoint['vlan_range'] = item['vlan_tag_range'] 
                 endpoint_list.append(endpoint)
             return endpoint_list

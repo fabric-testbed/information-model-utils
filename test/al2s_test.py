@@ -15,4 +15,4 @@ class Al2sTest(unittest.TestCase):
                 dev_name = ep['name']
                 # ifaces = nso.isis_interfaces(dev_name)
                 # l = len(ifaces)
-                print(ep)
+                print(ep, flush=True)

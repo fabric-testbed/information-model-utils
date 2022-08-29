@@ -119,25 +119,30 @@ class OessClient:
             raise Al2sAmOessError(f"GET: endpoints: {e}")
         
         hdr = {"Accept": "application/yang-data+json"}
-        url = f"{self.oess_url}/data.cgi?"
-        params = {'method': 'get_all_resources_for_workgroup', 'workgroup_id': workgid }
+        url = f"{self.oess_url}/entity.cgi?"
+        params = {'method': 'get_entities', 'workgroup_id': workgid }
         url = (url + urllib.parse.urlencode(params))
         try:
             response = requests.get(url, auth=(self.oess_user, self.oess_pass), headers=hdr, verify=False)
             if not response.text:
                 raise Al2sAmOessError(f'GET {url}: Empty response')
             jsonResponse = response.json()
-            results = jsonResponse["results"]
+            entities = jsonResponse["results"]
             endpoint_list = []
-            for item in results:
-                endpoint = {}
-                endpoint['name'] = item['node_name'] + ':' + item['interface_name']
-                endpoint['description'] = item['description']
-                endpoint['device_name'] = item['node_name']
-                endpoint['interface_name'] = item['interface_name']
-                endpoint['capacity'] = str(int(float(self.interface(item['interface_id'])['bandwidth'])/1000.0))
-                endpoint['vlan_range'] = item['vlan_tag_range'] 
-                endpoint_list.append(endpoint)
+            for entity in entities:
+                for interface in entity['interfaces']:
+                    endpoint = {}
+                    for acl in interface['acls']:
+                        if acl['workgroup_id'] == workgid:
+                            endpoint['name'] = interface['node'] + ':' + interface['name']
+                            endpoint['description'] = interface['description']
+                            endpoint['device_name'] = interface['node']
+                            endpoint['interface_name'] = interface['name']
+                            endpoint['capacity'] = str(int(float(self.interface(item['interface_id'])['bandwidth'])/1000.0))
+                            endpoint['vlan_range'] = interface['mpls_vlan_tag_range'] 
+                            if endpoint not in endpoint_list:
+                                endpoint_list.append(endpoint)
+                            break
             return endpoint_list
         except HTTPError as http_err:
             print(f'HTTP error occurred: {http_err}')

@@ -87,12 +87,12 @@ class NetworkARM:
             if self.sites_metadata and site_name in self.sites_metadata:
                 site_info = self.sites_metadata[site_name]
                 if 'l2_vlan_range' in site_info:
-                    l2_ns_labs = f.Labels.update(l2_ns_labs, vlan_range=site_info['l2_vlan_range'])
+                    l2_ns_labs = f.Labels.update(l2_ns_labs, vlan_range=site_info['l2_vlan_range'].split(','))
                 ipv4_ns_labs = f.Labels()
                 if 'ipv4_net' in site_info:
                     ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, ipv4_subnet=site_info['ipv4_net'])
                 if 'ipv4_vlan_range' in site_info:
-                    ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, vlan_range=site_info['ipv4_vlan_range'])
+                    ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, vlan_range=site_info['ipv4_vlan_range'].split(','))
                 ipv4_ns = switch.add_network_service(name=switch.name + '-ipv4-ns', layer=f.Layer.L3,
                                                      labels=ipv4_ns_labs,
                                                      node_id=switch.node_id + '-ipv4-ns', nstype=f.ServiceType.FABNetv4)
@@ -100,7 +100,7 @@ class NetworkARM:
                 if 'ipv6_net' in site_info:
                     ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, ipv6_subnet=site_info['ipv6_net'])
                 if 'ipv6_vlan_range' in site_info:
-                    ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, vlan_range=site_info['ipv6_vlan_range'])
+                    ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, vlan_range=site_info['ipv6_vlan_range'].split(','))
                 ipv6_ns = switch.add_network_service(name=switch.name + '-ipv6-ns', layer=f.Layer.L3,
                                                      labels=ipv6_ns_labs,
                                                      node_id=switch.node_id + '-ipv6-ns', nstype=f.ServiceType.FABNetv6)
@@ -155,7 +155,7 @@ class NetworkARM:
                             if 'vlan_range' in stitch_info:
                                 if '-' in stitch_info['vlan_range']:
                                     facility_port_labs = f.Labels.update(facility_port_labs,
-                                                                         vlan_range=stitch_info['vlan_range'])
+                                                                         vlan_range=stitch_info['vlan_range'].split(','))
                                 else:
                                     facility_port_labs = f.Labels.update(facility_port_labs,
                                                                          vlan=stitch_info['vlan_range'])

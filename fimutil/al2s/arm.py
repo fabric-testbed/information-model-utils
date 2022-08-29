@@ -1,9 +1,19 @@
 import fim.user as f
+import fim.slivers.capacities_labels as caplab
 from fimutil.al2s.oess import OessClient
 import os
 from yaml import load as yload
 from yaml import FullLoader
 
+
+def _update_vlan_label(labs, vlan: str):
+    if '-' not in vlan and ',' not in vlan:
+        return f.Labels.update(labs, vlan=vlan)
+    else:
+        try:
+            return f.Labels.update(labs, vlan_range=vlan.split(','))
+        except caplab.LabelException:
+            return labs
 
 class OessARM:
     """
@@ -62,7 +72,8 @@ class OessARM:
             # add capabilities
             port_caps = f.Capacities(bw=speed_gbps)
             # add labels
-            port_labs = f.Labels(local_name=port_name, vlan_range=vlan_range)
+            port_labs = f.Labels(local_name=port_name)
+            port_labs = _update_vlan_label(port_labs, vlan_range)
 
             # TODO: identify Cloud facing interface
             # ? add ipv4 and ipv6 range from site-config
@@ -87,12 +98,8 @@ class OessARM:
                     # build facility_port out of stitch_info
                     facility_port_labs = f.Labels()
                     if 'vlan_range' in stitch_info:
-                        if '-' in stitch_info['vlan_range']:
-                            facility_port_labs = f.Labels.update(facility_port_labs,
-                                                                 vlan_range=stitch_info['vlan_range'])
-                        else:
-                            facility_port_labs = f.Labels.update(facility_port_labs,
-                                                                 vlan=stitch_info['vlan_range'])
+                        facility_port_labs = _update_vlan_label(facility_port_labs, stitch_info['vlan_range'])
+
                     if 'ipv4_net' in stitch_info:
                         facility_port_labs = f.Labels.update(facility_port_labs,
                                                              ipv4_subnet=stitch_info['ipv4_net'])

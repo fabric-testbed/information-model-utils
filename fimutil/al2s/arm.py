@@ -14,7 +14,7 @@ class OessARM:
         self.topology = None
         self.config = self.get_config(config_file)
         self.oess = OessClient(config=self.config)
-        self.sites_metadata = None
+        self.site_info = None
         if 'sites_config' in self.config:
             sites_config_file = self.config['sites_config']
             if not os.path.isfile(sites_config_file):
@@ -133,6 +133,16 @@ class OessARM:
         if not self.topology:
             raise OessAmArmError("Topology is None")
         self.topology.serialize(file_name=file_name)
+
+    def get_config(self, config_file):
+        if not config_file:
+            config_file = os.getenv('HOME') + '/.netam.conf'
+            if not os.path.isfile(config_file):
+                config_file = '/etc/netam.conf'
+                if not os.path.isfile(config_file):
+                    raise Exception('Config file not found: %s' % config_file)
+        with open(config_file, 'r') as fd:
+            return yload(fd.read(), Loader=FullLoader)
 
 
 class OessAmArmError(Exception):

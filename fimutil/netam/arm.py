@@ -167,7 +167,7 @@ class NetworkARM:
                                                                      ipv6_subnet=stitch_info['ipv6_net'])
                             if 'local_device' in stitch_info:
                                 facility_port_labs = f.Labels.update(facility_port_labs,
-                                                                     device_name=stitch_info['local_port'])
+                                                                     device_name=stitch_info['local_device'])
                             if 'local_port' in stitch_info:
                                 facility_port_labs = f.Labels.update(facility_port_labs,
                                                                      local_name=stitch_info['local_port'])

@@ -157,6 +157,9 @@ class OessClient:
                             endpoint['vlan_range'] = interface['mpls_vlan_tag_range'] 
                             endpoint['cloud_interconnect_id'] = interface['cloud_interconnect_id']
                             endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type']
+                            endpoint['cloud_region'] = entity['name']
+                            if entity['parents']:
+                                endpoint['cloud_provider'] = entity['parents'][0]['name']
                             if endpoint not in endpoint_list:
                                 endpoint_list.append(endpoint)
                         

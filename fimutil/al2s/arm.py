@@ -1,5 +1,9 @@
 import fim.user as f
 import fim.slivers.capacities_labels as caplab
+from fim.slivers.interface_info import InterfaceType
+from fim.slivers.network_node import NodeType
+from fim.slivers.network_service import ServiceType
+
 from fimutil.al2s.oess import OessClient
 import os
 from yaml import load as yload
@@ -14,6 +18,7 @@ def _update_vlan_label(labs, vlan: str):
             return f.Labels.update(labs, vlan_range=vlan.split(','))
         except caplab.LabelException:
             return labs
+
 
 class OessARM:
     """
@@ -62,6 +67,7 @@ class OessARM:
 
         # TODO: Add ServiceController ?
 
+        cloud_facs = {}  # cloud facility name to network service map
         al2s_eps = self.oess.endpoints()
         for port in al2s_eps:
             port_name = port['name']
@@ -86,50 +92,50 @@ class OessARM:
                                      node_id=port_nid, labels=port_labs,
                                      capacities=port_caps, stitch_node=True)
 
-
             # add facility_ports based on stitching metadata
-            if self.site_info and 'facility_ports' in self.site_info:
-                for facility_name, stitch_info in self.site_info['facility_ports'].items():
-                    if 'stitch_port' not in stitch_info:
-                        raise OessAmArmError('no peer / stitch_port defined for facility_port: ' + facility_name)
-                    stitch_port_name = stitch_info['stitch_port'].replace(' ', '')
-                    if stitch_port_name != port_name:
-                        continue
-                    # build facility_port out of stitch_info
+            if 'cloud_interconnect_type' in port and 'cloud_provider' in port:
+                if port['cloud_interconnect_type'] == 'aws-hosted-connection' \
+                        or port['cloud_interconnect_type'] == 'gcp-partner-interconnect' \
+                        or port['cloud_interconnect_type'] == 'azure-express-route':
+                    # facility by cloud peering port
+                    facility_name = f"Cloud_Facility:{port['cloud_provider']}"
+                    # facility_port attributes
                     facility_port_labs = f.Labels()
-                    if 'vlan_range' in stitch_info:
-                        facility_port_labs = _update_vlan_label(facility_port_labs, stitch_info['vlan_range'])
-
-                    if 'ipv4_net' in stitch_info:
-                        facility_port_labs = f.Labels.update(facility_port_labs,
-                                                             ipv4_subnet=stitch_info['ipv4_net'])
-                    if 'ipv6_net' in stitch_info:
-                        facility_port_labs = f.Labels.update(facility_port_labs,
-                                                             ipv6_subnet=stitch_info['ipv6_net'])
-                    if 'local_device' in stitch_info:
-                        facility_port_labs = f.Labels.update(facility_port_labs,
-                                                             device_name=stitch_info['local_port'])
-                    if 'local_port' in stitch_info:
-                        facility_port_labs = f.Labels.update(facility_port_labs,
-                                                             local_name=stitch_info['local_port'])
+                    facility_port_labs = _update_vlan_label(facility_port_labs, vlan_range)
+                    facility_port_labs = f.Labels.update(facility_port_labs, device_name=port['cloud_region'])
+                    facility_port_labs = f.Labels.update(facility_port_labs, local_name=port_name + ':peer')
                     facility_port_caps = f.Capacities()
-                    if 'mtu' in stitch_info:
-                        facility_port_caps = f.Labels.update(facility_port_caps, mtu=stitch_info['mtu'])
-                    if 'bandwidth' in stitch_info:
-                        facility_port_caps = f.Labels.update(facility_port_caps, bw=stitch_info['bandwidth'])
-                    # create a facility with a VLAN network service and a single FacilityPort interface
-                    fac = self.topology.add_facility(name=facility_name,
-                                                     node_id=f'{port_nid}:facility+{facility_name}',
-                                                     site=site_name,
-                                                     labels=facility_port_labs, capacities=facility_port_caps)
-                    if 'description' in stitch_info:
-                        fac.interface_list[0].details = stitch_info['description']
-                    # connect it to the switch port via link
-                    self.topology.add_link(name=facility_name + '-link',
-                                           node_id=f'{port_nid}:facility+{facility_name}+link',
-                                           ltype=f.LinkType.L2Path,  # could be Patch too
-                                           interfaces=[sp, fac.interface_list[
-                                               0]])  # there is only one interface on the facility
+                    facility_port_caps = f.Labels.update(facility_port_caps, bw=speed_gbps)
+                    faci_name = f"{port['cloud_provider']}:{port['cloud_region']}:{port_name}"
+                    if facility_name in cloud_facs:
+                        facs = cloud_facs[facility_name]
+                        # add an interface / facility_port to the facility
+                        faci = facs.add_interface(name=faci_name, node_id=f"{port_nid}:{facility_name}:facility_port",
+                                                                     itype=InterfaceType.FacilityPort,
+                                                                     labels=facility_port_labs,
+                                                                     capacities=facility_port_caps)
+                        self.topology.add_link(name=facility_name + '-link:' + port_name,
+                                               node_id=f'{port_nid}:facility+{facility_name}+link',
+                                               ltype=f.LinkType.L2Path,  # could be Patch too
+                                               interfaces=[sp, faci])  # add additional interface to the facility
+                    else:
+                        facn = self.topology.add_node(name=facility_name, node_id=f'{port_nid}:facility+{facility_name}',
+                                                         site=port['cloud_provider'], ntype=NodeType.Facility)
+                        facs = facn.add_network_service(name=facility_name + '-ns', node_id=f'{port_nid}:facility+{facility_name}-ns',
+                                                        nstype=ServiceType.VLAN)
+                        faci = facs.add_interface(name=faci_name, node_id=f"{port_nid}:{facility_name}:facility_port",
+                                                                     itype=InterfaceType.FacilityPort,
+                                                                     labels=facility_port_labs,
+                                                                     capacities=facility_port_caps)
+
+                        if 'description' in port:
+                            faci.details = port['description']
+                        # connect it to the switch port via link
+                        self.topology.add_link(name=facility_name + '-link:' + port_name,
+                                               node_id=f'{port_nid}:facility+{facility_name}+link',
+                                               ltype=f.LinkType.L2Path,  # could be Patch too
+                                               interfaces=[sp, faci])  # add first interface to the facility
+                        cloud_facs[facility_name] = facs
 
     def delegate_topology(self, delegation: str) -> None:
         self.topology.single_delegation(delegation_id=delegation,

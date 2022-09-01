@@ -100,7 +100,7 @@ class OessClient:
             raise Al2sAmOessError(f"GET: {url}: {e}")
         pass
         
-    def endpoints(self, device_name=None) -> list:
+    def endpoints(self, device_name=None, cloud_connect=True) -> list:
         """
         return a list of all AL2S EndPoints (interfaces / ports) with attributes
         {   "name": "node_name:port_name:...",
@@ -112,6 +112,9 @@ class OessClient:
             cloud peering related ? ...
             other ...
         }
+        
+        parameters:
+        cloud_connect:  contain cloud endpoints if it is true
         """
         try:
             workgid = self.workgroupid(self.oess_group)
@@ -138,11 +141,25 @@ class OessClient:
                             endpoint['description'] = interface['description']
                             endpoint['device_name'] = interface['node']
                             endpoint['interface_name'] = interface['name']
-                            endpoint['capacity'] = str(int(float(self.interface(interface['interface_id'])['bandwidth'])/1000.0))
-                            endpoint['vlan_range'] = interface['mpls_vlan_tag_range'] 
+                            endpoint['capacity'] = str(float(interface['bandwidth'])/1000.0)
+                            endpoint['vlan_range'] = interface['mpls_vlan_tag_range']
+                            endpoint['cloud_interconnect_id'] = interface['cloud_interconnect_id']
+                            endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type'] 
                             if endpoint not in endpoint_list:
                                 endpoint_list.append(endpoint)
                             break
+                    if cloud_connect and interface['cloud_interconnect_id']:
+                            endpoint['name'] = interface['node'] + ':' + interface['name']
+                            endpoint['description'] = interface['description']
+                            endpoint['device_name'] = interface['node']
+                            endpoint['interface_name'] = interface['name']
+                            endpoint['capacity'] = str(float(interface['bandwidth'])/1000.0)
+                            endpoint['vlan_range'] = interface['mpls_vlan_tag_range'] 
+                            endpoint['cloud_interconnect_id'] = interface['cloud_interconnect_id']
+                            endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type']
+                            if endpoint not in endpoint_list:
+                                endpoint_list.append(endpoint)
+                        
             return endpoint_list
         except HTTPError as http_err:
             print(f'HTTP error occurred: {http_err}')

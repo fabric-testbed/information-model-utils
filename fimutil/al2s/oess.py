@@ -141,7 +141,7 @@ class OessClient:
                             endpoint['description'] = interface['description']
                             endpoint['device_name'] = interface['node']
                             endpoint['interface_name'] = interface['name']
-                            endpoint['capacity'] = str(float(interface['bandwidth'])/1000.0)
+                            endpoint['capacity'] = str(int(float(interface['bandwidth'])/1000.0))
                             endpoint['vlan_range'] = interface['mpls_vlan_tag_range']
                             endpoint['cloud_interconnect_id'] = interface['cloud_interconnect_id']
                             endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type'] 
@@ -153,7 +153,7 @@ class OessClient:
                             endpoint['description'] = interface['description']
                             endpoint['device_name'] = interface['node']
                             endpoint['interface_name'] = interface['name']
-                            endpoint['capacity'] = str(float(interface['bandwidth'])/1000.0)
+                            endpoint['capacity'] = str(int(float(interface['bandwidth'])/1000.0))
                             endpoint['vlan_range'] = interface['mpls_vlan_tag_range'] 
                             endpoint['cloud_interconnect_id'] = interface['cloud_interconnect_id']
                             endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type']

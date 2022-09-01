@@ -159,7 +159,12 @@ class OessClient:
                             endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type']
                             endpoint['cloud_region'] = entity['name']
                             if entity['parents']:
-                                endpoint['cloud_provider'] = entity['parents'][0]['name']
+                                parent_name = entity['parents'][0]['name']
+                                grandparent_name = self.get_parent_entity_name(parent_name, entities)
+                                if grandparent_name == 'Cloud Providers':
+                                    endpoint['cloud_provider'] = parent_name
+                                else:
+                                    endpoint['cloud_provider'] = grandparent_name
                             if endpoint not in endpoint_list:
                                 endpoint_list.append(endpoint)
                         
@@ -169,6 +174,16 @@ class OessClient:
         except Exception as e:
             raise Al2sAmOessError(f"GET: {url}: {e}")
         pass
+
+
+    def get_parent_entity_name(self, name, entities: list) -> str:
+        for entity in entities:
+            if entity["children"]:
+                for child_entity in entity["children"]:
+                    if name == child_entity['name']:
+                        return entity['name']
+        return None
+
 
     # reuse .netam.conf as the default config file
     def get_config(self, config_file):

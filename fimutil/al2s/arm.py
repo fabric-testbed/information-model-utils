@@ -98,7 +98,9 @@ class OessARM:
                         or port['cloud_interconnect_type'] == 'gcp-partner-interconnect' \
                         or port['cloud_interconnect_type'] == 'azure-express-route':
                     # facility by cloud peering port
-                    facility_name = f"Cloud_Facility:{port['cloud_provider']}"
+                    fac_name = f"Cloud_Facility:{port['cloud_provider']}"
+                    print(f'Facility: {fac_name}\n')
+                    faci_name = f"{port['cloud_provider']}:{port['cloud_region']}:{port_name}"
                     # facility_port attributes
                     facility_port_labs = f.Labels()
                     facility_port_labs = _update_vlan_label(facility_port_labs, vlan_range)
@@ -106,24 +108,23 @@ class OessARM:
                     facility_port_labs = f.Labels.update(facility_port_labs, local_name=port_name + ':peer')
                     facility_port_caps = f.Capacities()
                     facility_port_caps = f.Labels.update(facility_port_caps, bw=speed_gbps)
-                    faci_name = f"{port['cloud_provider']}:{port['cloud_region']}:{port_name}"
-                    if facility_name in cloud_facs:
-                        facs = cloud_facs[facility_name]
+                    if fac_name in cloud_facs:
+                        facs = cloud_facs[fac_name]
                         # add an interface / facility_port to the facility
-                        faci = facs.add_interface(name=faci_name, node_id=f"{port_nid}:{facility_name}:facility_port",
+                        faci = facs.add_interface(name=faci_name, node_id=f"{port_nid}:{fac_name}:facility_port",
                                                                      itype=InterfaceType.FacilityPort,
                                                                      labels=facility_port_labs,
                                                                      capacities=facility_port_caps)
-                        self.topology.add_link(name=facility_name + '-link:' + port_name,
-                                               node_id=f'{port_nid}:facility+{facility_name}+link',
+                        self.topology.add_link(name=fac_name + '-link:' + port_name,
+                                               node_id=f'{port_nid}:facility+{fac_name}+link',
                                                ltype=f.LinkType.L2Path,  # could be Patch too
                                                interfaces=[sp, faci])  # add additional interface to the facility
                     else:
-                        facn = self.topology.add_node(name=facility_name, node_id=f'{port_nid}:facility+{facility_name}',
+                        facn = self.topology.add_node(name=fac_name, node_id=f'{port_nid}:facility+{fac_name}',
                                                          site=port['cloud_provider'], ntype=NodeType.Facility)
-                        facs = facn.add_network_service(name=facility_name + '-ns', node_id=f'{port_nid}:facility+{facility_name}-ns',
+                        facs = facn.add_network_service(name=fac_name + '-ns', node_id=f'{port_nid}:facility+{fac_name}-ns',
                                                         nstype=ServiceType.VLAN)
-                        faci = facs.add_interface(name=faci_name, node_id=f"{port_nid}:{facility_name}:facility_port",
+                        faci = facs.add_interface(name=faci_name, node_id=f"{port_nid}:{fac_name}:facility_port",
                                                                      itype=InterfaceType.FacilityPort,
                                                                      labels=facility_port_labs,
                                                                      capacities=facility_port_caps)
@@ -131,11 +132,11 @@ class OessARM:
                         if 'description' in port:
                             faci.details = port['description']
                         # connect it to the switch port via link
-                        self.topology.add_link(name=facility_name + '-link:' + port_name,
-                                               node_id=f'{port_nid}:facility+{facility_name}+link',
+                        self.topology.add_link(name=fac_name + '-link:' + port_name,
+                                               node_id=f'{port_nid}:facility+{fac_name}+link',
                                                ltype=f.LinkType.L2Path,  # could be Patch too
                                                interfaces=[sp, faci])  # add first interface to the facility
-                        cloud_facs[facility_name] = facs
+                        cloud_facs[fac_name] = facs
 
     def delegate_topology(self, delegation: str) -> None:
         self.topology.single_delegation(delegation_id=delegation,

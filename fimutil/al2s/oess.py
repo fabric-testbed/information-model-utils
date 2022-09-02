@@ -118,6 +118,7 @@ class OessClient:
         """
         try:
             workgid = self.workgroupid(self.oess_group)
+            # Or hardcoded as "workgroup_id": "1482".
         except Exception as e:
             raise Al2sAmOessError(f"GET: endpoints: {e}")
         
@@ -148,6 +149,7 @@ class OessClient:
                             if endpoint not in endpoint_list:
                                 endpoint_list.append(endpoint)
                             break
+                        # workgroup_id: 'null' means all working group?
                     if cloud_connect and interface['cloud_interconnect_id']:
                             endpoint['name'] = interface['node'] + ':' + interface['name']
                             endpoint['description'] = interface['description']

@@ -49,13 +49,13 @@ class OessARM:
         switch = self.topology.add_node(name=node_name, model=model_name, site=site_name,
                                         node_id=node_nid, ntype=f.NodeType.Switch,
                                         capacities=f.Capacities(unit=1),
-                                        labels=f.Labels(local_name=node_name), stitch_node=True)
+                                        labels=f.Labels(local_name=node_name), stitch_node=False)
         # add L2 NetworkService
         l2_ns_labs = f.Labels()
         # ? add AL2S site-wide labels
         l2_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2, labels=l2_ns_labs,
                                            node_id=switch.node_id + '-ns', nstype=f.ServiceType.MPLS,
-                                           stitch_node=True)
+                                           stitch_node=False)
 
         l3vpn_ns_labs = f.Labels()
         l3vpn_ns_labs = f.Labels.update(l3vpn_ns_labs, asn='398900')
@@ -63,7 +63,7 @@ class OessARM:
         l3vpn_ns = switch.add_network_service(name=switch.name + '-l3vpn-ns', layer=f.Layer.L3,
                                               labels=l3vpn_ns_labs,
                                               node_id=switch.node_id + '-l3vpn-ns', nstype=f.ServiceType.L3VPN,
-                                              stitch_node=True)
+                                              stitch_node=False)
 
         # TODO: Add ServiceController ?
 
@@ -81,16 +81,15 @@ class OessARM:
             port_labs = f.Labels(local_name=port_name)
             port_labs = _update_vlan_label(port_labs, vlan_range)
 
-            # TODO: identify Cloud facing interface
-            # ? add ipv4 and ipv6 range from site-config
-            # ? add controller_url etc.
-
             # TODO: identify FABRIC facing interface
-            # ? stitch_node = True (set all interfaces to True for now)
+            #   Add WAN switch node, network_service and ports with stitch_node=True
+            #   Add Links with stitch_node=False
+            #   ++ The peering WAN site / port IDs will come from config inventory.
+            #   ++ Or ask Internet2 to incldue peering into FABRIC entity->interface->description instead
 
             sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
                                      node_id=port_nid, labels=port_labs,
-                                     capacities=port_caps, stitch_node=True)
+                                     capacities=port_caps, stitch_node=False)
 
             # add facility_ports based on stitching metadata
             if 'cloud_interconnect_type' in port and 'cloud_provider' in port:

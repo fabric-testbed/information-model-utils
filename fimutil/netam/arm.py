@@ -66,6 +66,15 @@ class NetworkARM:
         self.topology = f.SubstrateTopology()
         nodes = self._get_device_interfaces()
         port_ipv4net_map = {}
+
+        # add AL2S abstract switch node and ns
+        al2s_node = self.topology.add_node(name='AL2S', site='AL2S',
+                                           node_id='node+AL2S', ntype=f.NodeType.Switch,  stitch_node=True,
+                                           capacities=f.Capacities(unit=1))
+        al2s_l2_ns = al2s_node.add_network_service(name=al2s_node.name + '-ns', layer=f.Layer.L2,  stitch_node=True,
+                                                   node_id=al2s_node.node_id + '-ns', nstype=f.ServiceType.MPLS)
+
+        # add site nodes
         for node in nodes:
             # add switch node
             node_name = node['name']
@@ -142,7 +151,7 @@ class NetworkARM:
                     # add external facility stitching links
                     # refer to port_name as stitch_port
 
-                    # add facility_ports based on stitcihng metadata
+                    # add facility_ports based on stitching metadata
                     if site_info and 'facility_ports' in site_info:
                         for facility_name, stitch_info in site_info['facility_ports'].items():
                             if 'stitch_port' not in stitch_info:
@@ -189,6 +198,22 @@ class NetworkARM:
                                                    ltype=f.LinkType.L2Path,  # could be Patch too
                                                    interfaces=[sp, fac.interface_list[
                                                        0]])  # there is only one interface on the facility
+
+                    # add al2s_ports based on stitching metadata
+                    if site_info and 'al2s_ports' in site_info:
+                        for al2s_port_name, al2s_stitch_info in site_info['al2s_ports'].items():
+                            if 'stitch_port' not in al2s_stitch_info:
+                                raise NetAmArmError('no peer / stitch_port defined for al2s_port: ' + al2s_port_name)
+                            stitch_port_name = al2s_stitch_info['stitch_port'].replace(' ', '')
+                            if stitch_port_name != port_name:
+                                continue
+                            al2s_sp = al2s_l2_ns.add_interface(name=al2s_port_name, itype=f.InterfaceType.TrunkPort,
+                                                     node_id='port+al2s:'+al2s_port_name, stitch_node=True)
+                            # connect it to the FABRIC port via link
+                            self.topology.add_link(name=al2s_port_name + '-link',
+                                                   node_id=f'{port_nid}:{al2s_port_name}+link',
+                                                   ltype=f.LinkType.L2Path,  # could be Patch too
+                                                   interfaces=[sp, al2s_sp])
 
         # add FABRIC Testbed internal links
         for k in list(port_ipv4net_map):

@@ -167,27 +167,33 @@ class OessClient:
             for entity in entities:
                 for interface in entity['interfaces']:
                     endpoint = {}
+                    vlan_range = ""
                     for acl in interface['acls']:
                         if acl['workgroup_id'] == workgid:
-                            endpoint['name'] = interface['node'] + ':' + interface['name']
-                            endpoint['description'] = interface['description']
-                            endpoint['device_name'] = interface['node']
-                            endpoint['interface_name'] = interface['name']
-                            endpoint['capacity'] = str(float(interface['bandwidth'])/1000.0)
-                            endpoint['vlan_range'] = self.vlan_tag_range(workgid, interface["interface_id"])
-                            endpoint['cloud_interconnect_id'] = interface['cloud_interconnect_id']
-                            endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type'] 
-                            if endpoint not in endpoint_list:
-                                endpoint_list.append(endpoint)
-                            break
+                            if vlan_range:
+                                vlan_range = vlan_range + ',' + acl["start"] + "-" + acl["end"]
+                            else:
+                                vlan_range = acl["start"] + "-" + acl["end"]
+                    
+                    if vlan_range: 
+                        endpoint['name'] = interface['node'] + ':' + interface['name']
+                        endpoint['description'] = interface['description']
+                        endpoint['device_name'] = interface['node']
+                        endpoint['interface_name'] = interface['name']
+                        endpoint['capacity'] = str(float(interface['bandwidth']) / 1000.0)
+                        endpoint['vlan_range'] = vlan_range
+                        endpoint['cloud_interconnect_id'] = interface['cloud_interconnect_id']
+                        endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type'] 
+                        if endpoint not in endpoint_list:
+                            endpoint_list.append(endpoint)
+                        
                         # workgroup_id: 'null' means all working group?
-                    if cloud_connect and interface['cloud_interconnect_id']:
+                    if cloud_connect and not endpoint and interface['cloud_interconnect_id']:
                             endpoint['name'] = interface['node'] + ':' + interface['name']
                             endpoint['description'] = interface['description']
                             endpoint['device_name'] = interface['node']
                             endpoint['interface_name'] = interface['name']
                             endpoint['capacity'] = str(float(interface['bandwidth'])/1000.0)
-                            endpoint['vlan_range'] = self.vlan_tag_range(workgid, interface["interface_id"])
                             endpoint['cloud_interconnect_id'] = interface['cloud_interconnect_id']
                             endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type']
                             endpoint['cloud_region'] = entity['name']
@@ -198,6 +204,13 @@ class OessClient:
                                     endpoint['cloud_provider'] = parent_name
                                 else:
                                     endpoint['cloud_provider'] = grandparent_name
+                            vlan_range = ""
+                            for acl in interface['acls']:
+                                if vlan_range:
+                                    vlan_range = vlan_range + ',' + acl["start"] + "-" + acl["end"]
+                                else:
+                                    vlan_range = acl["start"] + "-" + acl["end"]
+                            endpoint['vlan_range'] = vlan_range
                             if endpoint not in endpoint_list:
                                 endpoint_list.append(endpoint)
                         

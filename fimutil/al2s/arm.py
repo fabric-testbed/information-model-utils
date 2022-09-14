@@ -98,7 +98,7 @@ class OessARM:
                         or port['cloud_interconnect_type'] == 'azure-express-route':
                     # facility by cloud peering port
                     fac_name = f"Cloud_Facility:{port['cloud_provider']}"
-                    print(f'Facility: {fac_name}\n')
+                    # print(f'Facility: {fac_name}\n')
                     faci_name = f"{port['cloud_provider']}:{port['cloud_region']}:{port_name}"
                     # facility_port attributes
                     facility_port_labs = f.Labels()

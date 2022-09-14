@@ -7,7 +7,7 @@ class Al2sTest(unittest.TestCase):
 
     def testOessClient(self):
         oess = OessClient()
-        eps = oess.endpoints()
+        eps = oess.endpoints(cloud_connect=True)
         self.assertTrue(eps, "Endpoint not found")
         if eps:
             for ep in eps:

@@ -100,6 +100,37 @@ class OessClient:
             raise Al2sAmOessError(f"GET: {url}: {e}")
         pass
         
+    def vlan_tag_range(self, workgroup_id, interface_id) -> str:
+        """
+        return the info of interface with the given interface_id.
+        """
+        
+        if not workgroup_id or not interface_id:
+            raise Al2sAmOessError(f'Invalid input argument')
+        
+        hdr = {"Accept": "application/yang-data+json"}
+        url = f"{self.oess_url}/data.cgi?"
+        params = {'method': 'get_all_resources_for_workgroup', 'workgroup_id': workgroup_id}
+        url = (url + urllib.parse.urlencode(params))
+        try:
+            response = requests.get(url, auth=(self.oess_user, self.oess_pass), headers=hdr, verify=False)
+            if not response.text:
+                raise Al2sAmOessError(f'GET {url}: Empty response')
+            jsonResponse = response.json()
+            
+            resources = jsonResponse["results"]
+            
+            for resource in resources:
+                if resource["interface_id"] == interface_id:
+                    return resource["vlan_tag_range"]
+            else:
+                raise Al2sAmOessError(f'OESS warning: interface not found for {interface_id}')
+        except HTTPError as http_err:
+            print(f'HTTP error occurred: {http_err}')
+        except Exception as e:
+            raise Al2sAmOessError(f"GET: {url}: {e}")
+        pass
+        
     def endpoints(self, device_name=None, cloud_connect=True) -> list:
         """
         return a list of all AL2S EndPoints (interfaces / ports) with attributes
@@ -142,8 +173,8 @@ class OessClient:
                             endpoint['description'] = interface['description']
                             endpoint['device_name'] = interface['node']
                             endpoint['interface_name'] = interface['name']
-                            endpoint['capacity'] = str(int(float(interface['bandwidth'])/1000.0))
-                            endpoint['vlan_range'] = interface['mpls_vlan_tag_range']
+                            endpoint['capacity'] = str(float(interface['bandwidth'])/1000.0)
+                            endpoint['vlan_range'] = self.vlan_tag_range(workgid, interface["interface_id"])
                             endpoint['cloud_interconnect_id'] = interface['cloud_interconnect_id']
                             endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type'] 
                             if endpoint not in endpoint_list:
@@ -155,8 +186,8 @@ class OessClient:
                             endpoint['description'] = interface['description']
                             endpoint['device_name'] = interface['node']
                             endpoint['interface_name'] = interface['name']
-                            endpoint['capacity'] = str(int(float(interface['bandwidth'])/1000.0))
-                            endpoint['vlan_range'] = interface['mpls_vlan_tag_range'] 
+                            endpoint['capacity'] = str(float(interface['bandwidth'])/1000.0)
+                            endpoint['vlan_range'] = self.vlan_tag_range(workgid, interface["interface_id"])
                             endpoint['cloud_interconnect_id'] = interface['cloud_interconnect_id']
                             endpoint['cloud_interconnect_type'] = interface['cloud_interconnect_type']
                             endpoint['cloud_region'] = entity['name']

@@ -217,8 +217,9 @@ def __process_card_port(port: EthernetCardPort, org: CardOrganizer) -> None:
     """
     if port.type == RalphAssetType.EthernetCardPF:
         if port.fields.get('Slot', None) is None:
-            logging.error(f'Unable to determine slot for card that owns {port=}')
-            raise RuntimeError('Unable to continue')
+            logging.warning(f'Unable to determine slot for card that owns {port=}, assigning Slot 0')
+            port.fields['Slot'] = '0'
+            #raise RuntimeError('Unable to continue')
         org.add_pf(port)
     elif port.type == RalphAssetType.EthernetCardVF:
         org.add_vf(port)
@@ -266,7 +267,7 @@ def __convert_pf_list_to_interface_data(pfs: List[EthernetCardPort]) -> Tuple[Li
     return macs, bdfs, peers
 
 
-def site_to_fim(site: Site, address: str) -> SubstrateTopology:
+def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopology:
     """
     Produce a site substrate topology advertisements from Ralph site information.
     Optionally supply externally obtained postal address.
@@ -397,11 +398,17 @@ def site_to_fim(site: Site, address: str) -> SubstrateTopology:
     # create dataplane switch with interfaces and links back to server ports
     logging.debug('Adding dataplane switch')
     if site.dp_switch is None:
-        logging.warning(f'DP Switch in site {site.name} was not detected/catalogued, unable to continue')
+        logging.warning(f'DP Switch was not detected/catalogued, unable to continue')
         raise RuntimeError('Unable to continue')
 
-    dp = topo.add_node(name=dp_switch_name_id(site.name.lower(), site.dp_switch.fields['IP'])[0],
-                       node_id=dp_switch_name_id(site.name.lower(), site.dp_switch.fields['IP'])[1],
+    # check if we are using someone else's DP switch
+    real_switch_site = site.name
+    if config and config.get('switchmap'):
+        switchmap = config.get('switchmap')
+        real_switch_site = switchmap.get(site.name)['site']
+
+    dp = topo.add_node(name=dp_switch_name_id(real_switch_site.lower(), site.dp_switch.fields['IP'])[0],
+                       node_id=dp_switch_name_id(real_switch_site.lower(), site.dp_switch.fields['IP'])[1],
                        site=site.name, ntype=NodeType.Switch, stitch_node=True)
     dp_ns = dp.add_network_service(name=dp.name + '-ns', node_id=dp.node_id + '-ns',
                                    nstype=ServiceType.MPLS, stitch_node=True)

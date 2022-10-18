@@ -2,6 +2,7 @@ import logging
 from abc import ABC
 from urllib.parse import urlencode
 import pyjq
+from typing import Dict
 
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.worker_node import WorkerNode
@@ -14,7 +15,7 @@ class Site:
     As site consists of some number of assets - for information model purposes
     typically some number of worker nodes, a storage node and a dataplane switch.
     """
-    def __init__(self, *, site_name: str, ralph: RalphURI, domain: str='.fabric-testbed.net'):
+    def __init__(self, *, site_name: str, ralph: RalphURI, config: Dict = None, domain: str = '.fabric-testbed.net'):
         """
         Site name can be upper or lower case
         """
@@ -24,6 +25,7 @@ class Site:
         self.name = site_name
         self.domain = domain
         self.ralph = ralph
+        self.config = config
 
     def catalog(self):
         """
@@ -63,9 +65,18 @@ class Site:
         query = {'hostname': f'{self.name.lower()}-data-sw' + self.domain}
         results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
                                              urlencode(query))
+
+        # config file can override dp switch URL
         dp_switch_url = None
+        if self.config and self.config.get('switchmap'):
+            switchmap = self.config.get('switchmap')
+            dp_switch_url = switchmap.get(self.name)['url']
+            if dp_switch_url:
+                logging.info(f'Overriding {self.name} DP switch URL from static configuration file')
         try:
-            dp_switch_url = pyjq.one('[ .results[0].url ]', results)[0]
+            if not dp_switch_url:
+                logging.info(f'Searching for DP switch URL')
+                dp_switch_url = pyjq.one('[ .results[0].url ]', results)[0]
             logging.info(f'Identified DP switch {dp_switch_url=}')
             if not dp_switch_url:
                 raise ValueError

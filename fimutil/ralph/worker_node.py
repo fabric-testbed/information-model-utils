@@ -17,6 +17,8 @@ class WorkerNode(RalphAsset):
     This class knows how to parse necessary worker fields in Ralph
     """
     FIELD_MAP = '{Name: .hostname, SN: .sn}'
+    # don't start at 1 - that's typically 'uplink'
+    OPENSTACK_NIC_INDEX = 10
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         super().__init__(uri=uri, ralph=ralph)
@@ -51,21 +53,32 @@ class WorkerNode(RalphAsset):
             self.components['nvme-' + str(disk_index)] = drive
             disk_index += 1
 
-        try:
-            port_urls = pyjq.all('.ethernet[].url', self.raw_json_obj)
-        except ValueError:
-            logging.warning('Unable to find any ethernet ports in node, continuing')
-            port_urls = list()
-
-        port_index = 1
-        for port in port_urls:
-            port = EthernetCardPort(uri=port, ralph=self.ralph)
+        # in lightweight sites skip looking for ports, add OpenStack vNIC instead
+        if self.LIGHTWEIGHT_SITE:
+            logging.debug('Since this is a lightweight site, skipping looking for ethernet ports, '
+                          'adding OpenStack port instead')
+            port = EthernetCardPort(uri='no-url', ralph=self.ralph)
+            port.force_values(model='OpenStack', desc='OpenStack vNIC', speed='1Gbps',
+                              bdf='0000:00:00.0', mac='00:00:00:00:00:00',
+                              peer_port=str(self.OPENSTACK_NIC_INDEX))
+            self.components['port-1'] = port
+            type(self).OPENSTACK_NIC_INDEX += 1
+        else:
             try:
-                port.parse()
-            except RalphAssetMimatch:
-                continue
-            self.components['port-' + str(port_index)] = port
-            port_index += 1
+                port_urls = pyjq.all('.ethernet[].url', self.raw_json_obj)
+            except ValueError:
+                logging.warning('Unable to find any ethernet ports in node, continuing')
+                port_urls = list()
+
+            port_index = 1
+            for port in port_urls:
+                port = EthernetCardPort(uri=port, ralph=self.ralph)
+                try:
+                    port.parse()
+                except RalphAssetMimatch:
+                    continue
+                self.components['port-' + str(port_index)] = port
+                port_index += 1
 
         gpus = GPU.find_gpus(self.raw_json_obj)
         gpu_index = 1

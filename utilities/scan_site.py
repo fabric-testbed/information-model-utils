@@ -45,7 +45,7 @@ if __name__ == "__main__":
                         help="Produce simplified output in JSON format and save to specified file")
     parser.add_argument("-l", "--lightweight", action="store_true",
                         help="This is a lightweight site supporting only OpenStack virtual NICs")
-    parser.add_argument("-c", "--config", action="store", default="scan-config.json",
+    parser.add_argument("-c", "--config", action="store", default=".scan-config.json",
                         help="JSON-formatted additional configuration file, "
                              "including e.g. odd site-dataplane switch mapping")
 

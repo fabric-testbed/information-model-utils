@@ -70,7 +70,7 @@ class Site:
         dp_switch_url = None
         if self.config and self.config.get('switchmap'):
             switchmap = self.config.get('switchmap')
-            dp_switch_url = switchmap.get(self.name)['url']
+            dp_switch_url = switchmap.get(self.name).get('url') if switchmap.get(self.name) else None
             if dp_switch_url:
                 logging.info(f'Overriding {self.name} DP switch URL from static configuration file')
         try:

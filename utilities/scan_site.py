@@ -91,6 +91,7 @@ if __name__ == "__main__":
         try:
             with open(args.config, 'r') as f:
                 config = json.load(f)
+            logging.info(f'Using static configuration file {args.config}')
         except FileNotFoundError:
             logging.error(f'Unable to find configuration file {args.config}, proceeding')
         except json.decoder.JSONDecodeError:

@@ -405,7 +405,7 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
     real_switch_site = site.name
     if config and config.get('switchmap'):
         switchmap = config.get('switchmap')
-        real_switch_site = switchmap.get(site.name)['site']
+        real_switch_site = switchmap.get(site.name).get('site') if switchmap.get(site.name) else site.name
 
     dp = topo.add_node(name=dp_switch_name_id(real_switch_site.lower(), site.dp_switch.fields['IP'])[0],
                        node_id=dp_switch_name_id(real_switch_site.lower(), site.dp_switch.fields['IP'])[1],

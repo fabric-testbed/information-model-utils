@@ -22,7 +22,7 @@ if __name__ == "__main__":
                         help="Produce an ARM model of a site and save into indicated file")
 
     parser.add_argument("--isis-link-validation", action="store_true",
-                        help="Generate model only based on NSO information")
+                        help="Only include validated links in the IS-IS topology")
 
     args = parser.parse_args()
 

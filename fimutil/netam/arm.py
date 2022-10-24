@@ -61,8 +61,10 @@ class NetworkARM:
         if self.sites_metadata and site_name in self.sites_metadata:
             site_info = self.sites_metadata[site_name]
             if 'p2p_links' in site_info:
+                if ' ' not in port_name:
+                    port_name = port_name.replace("GigE", "GigE ")
                 if port_name in site_info['p2p_links']:
-                    port_info = site_info['p2p_links']['port_name']
+                    port_info = site_info['p2p_links'][port_name]
                     if 'ltype' in port_info:
                         return port_info['ltype']
         # by default, return `l1path`

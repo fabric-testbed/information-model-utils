@@ -403,12 +403,19 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
 
     # check if we are using someone else's DP switch
     real_switch_site = site.name
-    if config and config.get('switchmap'):
-        switchmap = config.get('switchmap')
-        real_switch_site = switchmap.get(site.name).get('site') if switchmap.get(site.name) else site.name
+    if config and config.get(site.name) and config.get(site.name).get('dpswitch'):
+        dpswitch_override = config.get(site.name) and config.get(site.name).get('dpswitch')
+        real_switch_site = dpswitch_override.get('Site')
+        if not real_switch_site:
+            logging.error(f'Config file does not specify site for dpswitch mapping of site {site.name}')
+            raise RuntimeError('Unable to continue')
 
-    dp = topo.add_node(name=dp_switch_name_id(real_switch_site.lower(), site.dp_switch.fields['IP'])[0],
-                       node_id=dp_switch_name_id(real_switch_site.lower(), site.dp_switch.fields['IP'])[1],
+    # this prefers an IP address, but uses S/N if IP is None (like in GENI racks)
+    dp_name = dp_switch_name_id(real_switch_site.lower(),
+                                site.dp_switch.fields['IP'] if site.dp_switch.fields['IP'] else site.dp_switch.fields['SN'])
+    logging.info(f'Adding DP switch {dp_name}')
+    dp = topo.add_node(name=dp_name[0],
+                       node_id=dp_name[1],
                        site=site.name, ntype=NodeType.Switch, stitch_node=True)
     dp_ns = dp.add_network_service(name=dp.name + '-ns', node_id=dp.node_id + '-ns',
                                    nstype=ServiceType.MPLS, stitch_node=True)

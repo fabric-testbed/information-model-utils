@@ -95,14 +95,24 @@ The config file (by default `.scan-config.json` allows to statically override ce
 The general format example of the file is as follows (SITE1, SITE2 are all-caps site names):
 ```
 {
-  "switchmap": {
-    "SITE1": {
-      "url": "<URL of DP switch in the other site in Ralph>",
-      "site": "SITE2"
+  "SITE1": {
+    "dpswitch": {
+      "URL": <URL of SITE2's dp switch in Ralph>,
+      "Site": "SITE2"
+    },
+    "storage": {
+      "Disk": "500TB"
+    },
+    "workers": {
+      <worker FQDN>: {
+        "Disk": "100TB",
+        "Core": "15",
+        "RAM": "2TB",
+        "CPU": "4"
+      }
     }
   }
 }
-
 ```
 
 ### scan_net.py

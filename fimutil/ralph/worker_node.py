@@ -3,6 +3,9 @@ import dataclasses
 import pyjq
 import logging
 import json
+import re
+import binascii
+from typing import Dict
 
 from fimutil.ralph.asset import RalphAsset, RalphAssetType, RalphJSONError, RalphAssetMimatch
 from fimutil.ralph.nvme import NVMeDrive
@@ -19,11 +22,36 @@ class WorkerNode(RalphAsset):
     FIELD_MAP = '{Name: .hostname, SN: .sn}'
     # don't start at 1 - that's typically 'uplink'
     OPENSTACK_NIC_INDEX = 10
+    WORKER_NAME_REGEX = r'^[\w]+-w([\d]+).fabric-testbed.net$'
 
-    def __init__(self, *, uri: str, ralph: RalphURI):
+    def __init__(self, *, uri: str, ralph: RalphURI, site: str = None, config: Dict = None):
         super().__init__(uri=uri, ralph=ralph)
         self.type = RalphAssetType.Node
         self.model = None
+        self.site = site
+        self.config = config
+
+    @staticmethod
+    def generate_openstack_mac(site: str, worker: str) -> str:
+        """
+        generate a unique MAC address for a single OpenStack vNIC on a given worker in a site
+        For site 'UKY2' and worker 'uky2-w2.fabric-testbed.net' it will return
+        return: string
+        """
+        # take the last 4 letters of site name (so we include index like UKY2, UKY3)
+        # take worker index (assume 0-9)
+        # prepend 0xF1 (to make it private)
+        assert worker and site
+        m = re.match(WorkerNode.WORKER_NAME_REGEX, worker)
+        w_index = int(m[1])
+        mac_bytes = bytearray()
+        # prepend 0xF1
+        mac_bytes.append(0xf1)
+        mac_bytes.extend(bytes(site[-4:], 'utf-8'))
+        mac_bytes.append(w_index)
+        assert len(mac_bytes) == 6
+        mac_string = binascii.hexlify(mac_bytes, ':', 1)
+        return mac_string.decode('utf-8')
 
     def parse(self):
         super().parse()
@@ -33,6 +61,14 @@ class WorkerNode(RalphAsset):
         self.model = WorkerModel(uri=model_url, ralph=self.ralph)
         try:
             self.model.parse()
+            # override from config if present
+            if self.config and self.config.get(self.site) and self.config.get(self.site).get('workers') and \
+                self.config.get(self.site).get('workers').get(self.fields['Name']):
+                worker_override = self.config.get(self.site).get('workers').get(self.fields['Name'])
+                self.model.fields['RAM'] = worker_override.get('RAM', self.model.fields['RAM'])
+                self.model.fields['CPU'] = worker_override.get('CPU', self.model.fields['CPU'])
+                self.model.fields['Core'] = worker_override.get('Core', self.model.fields['Core'])
+                self.model.fields['Disk'] = worker_override.get('Disk', self.model.fields['Disk'])
         except RalphAssetMimatch:
             pass
 
@@ -59,11 +95,12 @@ class WorkerNode(RalphAsset):
                           'adding OpenStack port instead')
             port = EthernetCardPort(uri='no-url', ralph=self.ralph)
             port.force_values(model='OpenStack', desc='OpenStack vNIC', speed='1Gbps',
-                              bdf='0000:00:00.0', mac='00:00:00:00:00:00',
+                              bdf='0000:00:00.0', mac=self.generate_openstack_mac(self.site, self.fields['Name']),
                               peer_port=str(self.OPENSTACK_NIC_INDEX))
             self.components['port-1'] = port
             type(self).OPENSTACK_NIC_INDEX += 1
         else:
+            # scan for physical NICs and virtual NICs
             try:
                 port_urls = pyjq.all('.ethernet[].url', self.raw_json_obj)
             except ValueError:

@@ -44,7 +44,7 @@ class Site:
 
         for worker in worker_urls:
             logging.info(f'Parsing {worker=}')
-            ralph_worker = WorkerNode(uri=worker, ralph=self.ralph)
+            ralph_worker = WorkerNode(uri=worker, ralph=self.ralph, site=self.name, config=self.config)
             ralph_worker.parse()
             self.workers.append(ralph_worker)
 
@@ -59,6 +59,9 @@ class Site:
                 raise ValueError
             self.storage = Storage(uri=storage_url, ralph=self.ralph)
             self.storage.parse()
+            if self.config and self.config.get(self.name) and self.config.get(self.name).get("storage"):
+                storage_override = self.config.get(self.name).get("storage")
+                self.storage.model.fields['Disk'] = storage_override['Disk']
         except ValueError:
             logging.warning('Unable to find storage node in site, continuing')
 
@@ -68,11 +71,14 @@ class Site:
 
         # config file can override dp switch URL
         dp_switch_url = None
-        if self.config and self.config.get('switchmap'):
-            switchmap = self.config.get('switchmap')
-            dp_switch_url = switchmap.get(self.name).get('url') if switchmap.get(self.name) else None
+        if self.config and self.config.get(self.name) and self.config.get(self.name).get('dpswitch'):
+            dpswitch_override = self.config.get(self.name) and self.config.get(self.name).get('dpswitch')
+            dp_switch_url = dpswitch_override.get('URL')
             if dp_switch_url:
                 logging.info(f'Overriding {self.name} DP switch URL from static configuration file')
+            else:
+                logging.error(f'Config file does not specify a URL for alternate dp switch of site {self.name}')
+                raise RuntimeError('Unable to continue')
         try:
             if not dp_switch_url:
                 logging.info(f'Searching for DP switch URL')

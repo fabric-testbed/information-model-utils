@@ -57,6 +57,19 @@ class NetworkARM:
                 dev['interfaces'] = ifaces
         return devs
 
+    def _get_link_type(self, site_name, port_name) -> str:
+        if self.sites_metadata and site_name in self.sites_metadata:
+            site_info = self.sites_metadata[site_name]
+            if 'p2p_links' in site_info:
+                if ' ' not in port_name:
+                    port_name = port_name.replace("GigE", "GigE ")
+                if port_name in site_info['p2p_links']:
+                    port_info = site_info['p2p_links'][port_name]
+                    if 'ltype' in port_info:
+                        return port_info['ltype']
+        # by default, return `l1path`
+        return 'l1path'
+
     def build_topology(self) -> None:
         # firstly get SR-PCE active links
         if self.sr_pce is not None:
@@ -66,6 +79,15 @@ class NetworkARM:
         self.topology = f.SubstrateTopology()
         nodes = self._get_device_interfaces()
         port_ipv4net_map = {}
+
+        # add AL2S abstract switch node and ns
+        al2s_node = self.topology.add_node(name='AL2S', site='AL2S',
+                                           node_id='node+AL2S', ntype=f.NodeType.Switch,  stitch_node=True,
+                                           capacities=f.Capacities(unit=1))
+        al2s_l2_ns = al2s_node.add_network_service(name=al2s_node.name + '-ns', layer=f.Layer.L2,  stitch_node=True,
+                                                   node_id=al2s_node.node_id + '-ns', nstype=f.ServiceType.MPLS)
+
+        # add site nodes
         for node in nodes:
             # add switch node
             node_name = node['name']
@@ -87,12 +109,12 @@ class NetworkARM:
             if self.sites_metadata and site_name in self.sites_metadata:
                 site_info = self.sites_metadata[site_name]
                 if 'l2_vlan_range' in site_info:
-                    l2_ns_labs = f.Labels.update(l2_ns_labs, vlan_range=site_info['l2_vlan_range'])
+                    l2_ns_labs = f.Labels.update(l2_ns_labs, vlan_range=site_info['l2_vlan_range'].split(','))
                 ipv4_ns_labs = f.Labels()
                 if 'ipv4_net' in site_info:
                     ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, ipv4_subnet=site_info['ipv4_net'])
                 if 'ipv4_vlan_range' in site_info:
-                    ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, vlan_range=site_info['ipv4_vlan_range'])
+                    ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, vlan_range=site_info['ipv4_vlan_range'].split(','))
                 ipv4_ns = switch.add_network_service(name=switch.name + '-ipv4-ns', layer=f.Layer.L3,
                                                      labels=ipv4_ns_labs,
                                                      node_id=switch.node_id + '-ipv4-ns', nstype=f.ServiceType.FABNetv4)
@@ -100,10 +122,17 @@ class NetworkARM:
                 if 'ipv6_net' in site_info:
                     ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, ipv6_subnet=site_info['ipv6_net'])
                 if 'ipv6_vlan_range' in site_info:
-                    ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, vlan_range=site_info['ipv6_vlan_range'])
+                    ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, vlan_range=site_info['ipv6_vlan_range'].split(','))
                 ipv6_ns = switch.add_network_service(name=switch.name + '-ipv6-ns', layer=f.Layer.L3,
                                                      labels=ipv6_ns_labs,
                                                      node_id=switch.node_id + '-ipv6-ns', nstype=f.ServiceType.FABNetv6)
+
+                l3vpn_ns_labs = f.Labels()
+                l3vpn_ns_labs = f.Labels.update(l3vpn_ns_labs, asn='398900')
+                # TODO: add more labels (per-site vlan_range and ipv4_range for bgp peering)
+                l3vpn_ns = switch.add_network_service(name=switch.name + '-l3vpn-ns', layer=f.Layer.L3,
+                                                     labels=l3vpn_ns_labs,
+                                                     node_id=switch.node_id + '-l3vpn-ns', nstype=f.ServiceType.L3VPN)
 
             # add L2 NetworkService
             l2_ns = switch.add_network_service(name=switch.name + '-ns', layer=f.Layer.L2, labels=l2_ns_labs,
@@ -124,7 +153,8 @@ class NetworkARM:
                             ipv4_addr_ip = ipv4_addr['ip']
                             ipv4_addr_mask = ipv4_addr['netmask']
                             port_labs = f.Labels().update(port_labs, local_name=port_name, ipv4=ipv4_addr_ip)
-                            port_ipv4net_map[port_nid] = {"ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
+                            port_ipv4net_map[port_nid] = {"site": site_name, "port": port_name,
+                                "ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
                             # only take the first
                             break
                     if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
@@ -142,7 +172,7 @@ class NetworkARM:
                     # add external facility stitching links
                     # refer to port_name as stitch_port
 
-                    # add facility_ports based on stitcihng metadata
+                    # add facility_ports based on stitching metadata
                     if site_info and 'facility_ports' in site_info:
                         for facility_name, stitch_info in site_info['facility_ports'].items():
                             if 'stitch_port' not in stitch_info:
@@ -155,7 +185,7 @@ class NetworkARM:
                             if 'vlan_range' in stitch_info:
                                 if '-' in stitch_info['vlan_range']:
                                     facility_port_labs = f.Labels.update(facility_port_labs,
-                                                                         vlan_range=stitch_info['vlan_range'])
+                                                                         vlan_range=stitch_info['vlan_range'].split(','))
                                 else:
                                     facility_port_labs = f.Labels.update(facility_port_labs,
                                                                          vlan=stitch_info['vlan_range'])
@@ -167,7 +197,7 @@ class NetworkARM:
                                                                      ipv6_subnet=stitch_info['ipv6_net'])
                             if 'local_device' in stitch_info:
                                 facility_port_labs = f.Labels.update(facility_port_labs,
-                                                                     device_name=stitch_info['local_port'])
+                                                                     device_name=stitch_info['local_device'])
                             if 'local_port' in stitch_info:
                                 facility_port_labs = f.Labels.update(facility_port_labs,
                                                                      local_name=stitch_info['local_port'])
@@ -190,11 +220,29 @@ class NetworkARM:
                                                    interfaces=[sp, fac.interface_list[
                                                        0]])  # there is only one interface on the facility
 
+                    # add al2s_ports based on stitching metadata
+                    if site_info and 'al2s_ports' in site_info:
+                        for al2s_port_name, al2s_stitch_info in site_info['al2s_ports'].items():
+                            if 'stitch_port' not in al2s_stitch_info:
+                                raise NetAmArmError('no peer / stitch_port defined for al2s_port: ' + al2s_port_name)
+                            stitch_port_name = al2s_stitch_info['stitch_port'].replace(' ', '')
+                            if stitch_port_name != port_name:
+                                continue
+                            al2s_sp = al2s_l2_ns.add_interface(name=al2s_port_name, itype=f.InterfaceType.TrunkPort,
+                                                     node_id='port+al2s:'+al2s_port_name, stitch_node=True)
+                            # connect it to the FABRIC port via link
+                            self.topology.add_link(name=al2s_port_name + '-link',
+                                                   node_id=f'{port_nid}:{al2s_port_name}+link',
+                                                   ltype=f.LinkType.L2Path,  # could be Patch too
+                                                   interfaces=[sp, al2s_sp])
+
         # add FABRIC Testbed internal links
         for k in list(port_ipv4net_map):
             if k not in port_ipv4net_map:
                 continue
             v = port_ipv4net_map[k]
+            site_name = v['site']
+            port_name = v['port']
             port_ip = v['ip']
             port_netmask = v['netmask']
             port_sp = v['interface']
@@ -213,11 +261,18 @@ class NetworkARM:
                 if has_link:
                     port_ipv4net_map.pop(k_r, None)
                     port_sp_r = v_r['interface']
+                    # determine link type: L2 vs L1
+                    link_type = self._get_link_type(site_name, port_name)
+                    layer = f.Layer.L1
+                    ltype = f.LinkType.L1Path
+                    if link_type == 'l2path':
+                        layer = f.Layer.L2
+                        ltype = f.LinkType.L2Path
                     # add link
                     link_nid = f"link:local-{port_sp.node_id}:remote-{port_sp_r.node_id}"
                     link = self.topology.add_link(name=f'{port_sp.node_id} to {port_sp_r.node_id}',
-                                                  ltype=f.LinkType.L2Path,
-                                                  layer=f.Layer.L2,
+                                                  layer=layer,
+                                                  ltype=ltype,
                                                   interfaces=[port_sp, port_sp_r],
                                                   node_id=link_nid)
 

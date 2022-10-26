@@ -35,8 +35,9 @@ SPECIAL_FLAVORS = [
 ]
 """
 
-# 1000 or 500 flavors
-CPUs = [x for x in range(4, 64, 4)]
+# 974 flavors
+# to get 474 use range(4, 66, 4)
+CPUs = [x for x in range(4, 64, 2)]
 Disk = [10, 100, 500, 2000]
 RAM = [4, 8, 16, 32, 64, 128, 256, 384]
 

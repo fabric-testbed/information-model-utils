@@ -35,9 +35,12 @@ class EthernetCardPort(EthernetPort):
     # "Description": "Mellanox Technologies MT28908 Family
     # [ConnectX-6 Virtual Function] in (0000:e2:00.1)/(0000:e2:12.3)"
     # "Connection": "Connected to port HundredGigE0/0/0/21 and Tagged using VLAN 2018 on lbnl-data-sw"
+    # or
+    # "Description: "Intel Corporation I350 Gigabit Network Connection (rev 01) in NIC Port 2 (0000:02:00.1)"
+    # "Connection": "Connected to port 7 on uky2-data-sw"
     REGEX_FIELDS = {'BDF': ['Description', ".+?\\(([0-9a-f:.]+)\\).*"],
                     'vBDF': ['Description', ".+/\\(([0-9a-f:.]+)\\).*"],
-                    'Peer_port': ['Connection', ".+port ([\\w]+[0-9/]+) .+"],
+                    'Peer_port': ['Connection', ".+port ([\\w\\d/]+) .+"],
                     'VLAN': ['Connection', ".+ VLAN ([\\d]+) on.+"],
                     'Model': ['Description', ".+\\[([\\w-]+).*?\\].*"],
                     'Slot': ['Description', ".+Slot ([\\d]+) .*"]}
@@ -52,3 +55,39 @@ class EthernetCardPort(EthernetPort):
             raise RalphAssetMimatch('This is not a usable card')
         if self.fields.get('vBDF', None) is not None:
             self.type = RalphAssetType.EthernetCardVF
+
+    def force_values(self, bdf: str or None = None,
+                     vbdf: str or None = None,
+                     mac: str or None = None,
+                     desc: str or None = None,
+                     speed: str or None = None,
+                     connection: str or None = None,
+                     peer_port: str or None = None,
+                     vlan: str or None = None,
+                     model: str or None = None,
+                     slot: str or None = None,
+                     ctype: RalphAssetType = RalphAssetType.EthernetCardPF):
+        """
+        when you just want to force values without parsing. type defaults to a VF
+        """
+        self.type = ctype
+        if bdf:
+            self.fields['BDF'] = bdf
+        if vbdf:
+            self.fields['vBDF'] = vbdf
+        if peer_port:
+            self.fields['Peer_port'] = peer_port
+        if vlan:
+            self.fields['VLAN'] = vlan
+        if model:
+            self.fields['Model'] = model
+        if slot:
+            self.fields['Slot'] = slot
+        if mac:
+            self.fields['MAC'] = mac
+        if desc:
+            self.fields['Description'] = desc
+        if speed:
+            self.fields['Speed'] = speed
+        if connection:
+            self.fields['Connection'] = connection

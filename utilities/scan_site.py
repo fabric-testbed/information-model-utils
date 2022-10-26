@@ -38,11 +38,16 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--address", action="store",
                         help="Provide address for the site")
     parser.add_argument("-n", "--no-ssl", action="store_true",
-                        help="Disable SSL server sert validation (use with caution!)")
+                        help="Disable SSL server cert validation (use with caution!)")
     parser.add_argument("--brief", action="store_true",
                         help="Print only a brief description of assets")
     parser.add_argument("-j", "--json", action="store",
                         help="Produce simplified output in JSON format and save to specified file")
+    parser.add_argument("-l", "--lightweight", action="store_true",
+                        help="This is a lightweight site supporting only OpenStack virtual NICs")
+    parser.add_argument("-c", "--config", action="store", default=".scan-config.json",
+                        help="JSON-formatted additional configuration file, "
+                             "including e.g. odd site-dataplane switch mapping")
 
     args = parser.parse_args()
 
@@ -79,21 +84,39 @@ if __name__ == "__main__":
             sys.exit(-1)
     else:
         print('WARNING: you did not provide a site postal address with -a option - '
-              'it is strongly recommended that you do.')
+              'it is strongly recommended that you do for production use.')
+
+    config = None
+    if args.config:
+        try:
+            with open(args.config, 'r') as f:
+                config = json.load(f)
+            logging.info(f'Using static configuration file {args.config}')
+        except FileNotFoundError:
+            logging.error(f'Unable to find configuration file {args.config}, proceeding')
+        except json.decoder.JSONDecodeError:
+            logging.error(f'File {args.config} is not properly JSON-formatted, exiting')
+            sys.exit(-1)
 
     if args.brief:
         RalphAsset.print_brief_summary()
 
-    ralph = RalphURI(token=args.token, base_uri=args.base_uri, disable_ssl=args.no_ssl)
-    site = Site(site_name=args.site, ralph=ralph)
+    if args.lightweight:
+        RalphAsset.lightweight_site()
 
-    logging.info(f'Cataloging site {args.site}')
+    ralph = RalphURI(token=args.token, base_uri=args.base_uri, disable_ssl=args.no_ssl)
+    site = Site(site_name=args.site, ralph=ralph, config=config)
+
+    if args.lightweight:
+        logging.info(f'Cataloging site {args.site} as a lightweight site - skipping all ethernet ports/cards')
+    else:
+        logging.info(f'Cataloging site {args.site}')
     site.catalog()
     logging.info('Cataloging complete')
 
     if args.model is not None:
         logging.info('Producing an ARM model')
-        topo = site_to_fim(site, args.address)
+        topo = site_to_fim(site, args.address, config)
         logging.info('Generating delegations')
         delegation1 = 'primary'
 

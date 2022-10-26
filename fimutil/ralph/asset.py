@@ -38,6 +38,7 @@ class RalphAsset(ABC):
     # unmatched regexes simply leave the field unfilled without generating errors
     REGEX_FIELDS = {}
     PRINT_SUMMARY = False
+    LIGHTWEIGHT_SITE = False
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         self.uri = uri
@@ -99,6 +100,10 @@ class RalphAsset(ABC):
     @classmethod
     def print_brief_summary(cls):
         cls.PRINT_SUMMARY = True
+
+    @classmethod
+    def lightweight_site(cls):
+        cls.LIGHTWEIGHT_SITE = True
 
 
 class RalphJSONError(Exception):

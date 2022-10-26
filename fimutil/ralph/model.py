@@ -1,5 +1,6 @@
 import pyjq
 import re
+import logging
 
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.asset import RalphAsset, RalphAssetType
@@ -51,6 +52,12 @@ class WorkerModel(SimpleModel):
             pass
         total_disk = sas_disk_size * sas_disk_count
         self.fields['Disk'] = str(total_disk) + ' ' + unit
+        if not self.fields['RAM']:
+            logging.warning('Unable to parse RAM, setting to 0')
+            self.fields['RAM'] = '0G'
+        if not self.fields['CPU']:
+            logging.warning('Unable to parse CPU count, setting to 0')
+            self.fields['CPU'] = '0'
 
 
 class StorageModel(SimpleModel):

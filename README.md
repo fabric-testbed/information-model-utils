@@ -75,7 +75,7 @@ $ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -p
 Prints information collected from Ralph
 
 ```
-$ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -a <street address string> -m <model name>.graphml
+$ scan_site.py -b https://hostname/api/ -s <site acronym> -t <token> -a <street address string> -m <model name>.graphml -c <config file>
 ```
 Saves site model into a file in GraphML format. 
 
@@ -88,6 +88,32 @@ To produce a site JSON file, use `-j` or `--json` followed by a filename.
 
 Options`-p`, `-m` and `-j` could be used together (i.e. to produce a model, a printout and a JSON file). If none is specified
 the site is scanned however no extra output is produced. 
+
+The config file (by default `.scan-config.json` allows to statically override certain scanned details:
+- Allows for site to say it is using some other site's DP switch
+
+The general format example of the file is as follows (SITE1, SITE2 are all-caps site names):
+```
+{
+  "SITE1": {
+    "dpswitch": {
+      "URL": <URL of SITE2's dp switch in Ralph>,
+      "Site": "SITE2"
+    },
+    "storage": {
+      "Disk": "500TB"
+    },
+    "workers": {
+      <worker FQDN>: {
+        "Disk": "100TB",
+        "Core": "15",
+        "RAM": "2TB",
+        "CPU": "4"
+      }
+    }
+  }
+}
+```
 
 ### scan_net.py
 

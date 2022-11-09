@@ -13,6 +13,7 @@ from fimutil.ralph.ethernetport import EthernetCardPort
 from fimutil.ralph.gpu import GPU
 from fimutil.ralph.model import WorkerModel
 from fimutil.ralph.ralph_uri import RalphURI
+from fimutil.ralph.dp_switch import DPSwitch
 
 
 class WorkerNode(RalphAsset):
@@ -24,12 +25,14 @@ class WorkerNode(RalphAsset):
     OPENSTACK_NIC_INDEX = 10
     WORKER_NAME_REGEX = r'^[\w]+-w([\d]+).fabric-testbed.net$'
 
-    def __init__(self, *, uri: str, ralph: RalphURI, site: str = None, config: Dict = None):
+    def __init__(self, *, uri: str, ralph: RalphURI, site: str = None, dp_switch: DPSwitch, config: Dict = None):
         super().__init__(uri=uri, ralph=ralph)
         self.type = RalphAssetType.Node
         self.model = None
         self.site = site
         self.config = config
+        # so we can get VLAN info
+        self.dp_switch = dp_switch
 
     @staticmethod
     def generate_openstack_mac(site: str, worker: str) -> str:
@@ -42,12 +45,16 @@ class WorkerNode(RalphAsset):
         # take worker index (assume 0-9)
         # prepend 0xF1 (to make it private)
         assert worker and site
+        # make site 4-letters
+
         m = re.match(WorkerNode.WORKER_NAME_REGEX, worker)
         w_index = int(m[1])
         mac_bytes = bytearray()
         # prepend 0xF1
         mac_bytes.append(0xf1)
-        mac_bytes.extend(bytes(site[-4:], 'utf-8'))
+        # site name always 4 letters (or padded)
+        # WARNING: THIS WILL NOT WORK FOR SITES WITH NAMES LIKE SITE1 - this is 5 letters!
+        mac_bytes.extend(bytes(site[-4:].ljust(4), 'utf-8'))
         mac_bytes.append(w_index)
         assert len(mac_bytes) == 6
         mac_string = binascii.hexlify(mac_bytes, ':', 1)
@@ -92,12 +99,31 @@ class WorkerNode(RalphAsset):
         # in lightweight sites skip looking for ports, add OpenStack vNIC instead
         if self.LIGHTWEIGHT_SITE:
             logging.debug('Since this is a lightweight site, skipping looking for ethernet ports, '
-                          'adding OpenStack port instead')
+                          'adding OpenStack parent port and vNICs instead')
+            port_index = 1
+            # 'parent'
             port = EthernetCardPort(uri='no-url', ralph=self.ralph)
-            port.force_values(model='OpenStack', desc='OpenStack vNIC', speed='1Gbps',
+            port.force_values(model='OpenStack-vNIC', desc='OpenStack parent NIC', speed='1Gbps',
                               bdf='0000:00:00.0', mac=self.generate_openstack_mac(self.site, self.fields['Name']),
                               peer_port=str(self.OPENSTACK_NIC_INDEX))
-            self.components['port-1'] = port
+            self.components['port-' + str(port_index)] = port
+            port_index += 1
+            if not self.dp_switch.vlan_ranges:
+                raise RuntimeError('OpenStack sites should define at least local VLANs '
+                                   '(and usually AL2S vlans) as custom fields of dp switch in Ralph, none found')
+            # Add children with bdf=0000:00:00.0 and vBDF=0000:00:00.0 and mapped to VLANs that we get from DP switch
+            # NOTE: vfs have 'vBDF' set to their own and 'BDF' set to parent.
+            for vlan in self.dp_switch.vlan_ranges:
+                port = EthernetCardPort(uri='no-url', ralph=self.ralph)
+                # make all vbdfs different and reflection of VLAN tag
+                vbdf_diff = binascii.hexlify(vlan.to_bytes(2, 'big'), ':', 1).decode('utf-8')
+                port.force_values(model='OpenStack-vNIC', desc='OpenStack vNIC', speed='1Gbps', vlan=str(vlan),
+                                  bdf='0000:00:00.0', vbdf='0000:' + vbdf_diff + '.0',
+                                  ctype=RalphAssetType.EthernetCardVF,
+                                  mac=self.generate_openstack_mac(self.site, self.fields['Name']),
+                                  peer_port=str(self.OPENSTACK_NIC_INDEX))
+                self.components['port-' + str(port_index)] = port
+                port_index += 1
             type(self).OPENSTACK_NIC_INDEX += 1
         else:
             # scan for physical NICs and virtual NICs

@@ -417,8 +417,13 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
     dp = topo.add_node(name=dp_name[0],
                        node_id=dp_name[1],
                        site=site.name, ntype=NodeType.Switch, stitch_node=True)
+    dp_service_type = ServiceType.MPLS
+    # if this is a lightweight site and AL2S_vlans are specified, we use VLAN service
+    if site.dp_switch.fields['AL2S_SWITCH']:
+        dp_service_type = ServiceType.VLAN
+
     dp_ns = dp.add_network_service(name=dp.name + '-ns', node_id=dp.node_id + '-ns',
-                                   nstype=ServiceType.MPLS, stitch_node=True)
+                                   nstype=dp_service_type, stitch_node=True)
 
     # add switch ports (they are stitch nodes, so just need to get their ids right)
     link_idx = 1

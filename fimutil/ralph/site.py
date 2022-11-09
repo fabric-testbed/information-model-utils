@@ -35,36 +35,6 @@ class Site:
         - storage: <site>-storage.fabric-testbed.net
         - dp switch: <site>-data-sw.fabric-testbed.net
         """
-        query = {'hostname__regex': f'{self.name.lower()}-w[1234567890]+' + self.domain}
-
-        results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
-                                             urlencode(query))
-        worker_urls = pyjq.one('[ .results[].url ]', results)
-        logging.info(f'Identified {len(worker_urls)} workers')
-
-        for worker in worker_urls:
-            logging.info(f'Parsing {worker=}')
-            ralph_worker = WorkerNode(uri=worker, ralph=self.ralph, site=self.name, config=self.config)
-            ralph_worker.parse()
-            self.workers.append(ralph_worker)
-
-        query = {'hostname': f'{self.name.lower()}-storage' + self.domain}
-        results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
-                                             urlencode(query))
-        storage_url = None
-        try:
-            storage_url = pyjq.one('[ .results[0].url ]', results)[0]
-            logging.info(f'Identified storage {storage_url=}')
-            if not storage_url:
-                raise ValueError
-            self.storage = Storage(uri=storage_url, ralph=self.ralph)
-            self.storage.parse()
-            if self.config and self.config.get(self.name) and self.config.get(self.name).get("storage"):
-                storage_override = self.config.get(self.name).get("storage")
-                self.storage.model.fields['Disk'] = storage_override['Disk']
-        except ValueError:
-            logging.warning('Unable to find storage node in site, continuing')
-
         query = {'hostname': f'{self.name.lower()}-data-sw' + self.domain}
         results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
                                              urlencode(query))
@@ -90,6 +60,37 @@ class Site:
             self.dp_switch.parse()
         except ValueError:
             logging.warning('Unable to find a dataplane switch in site, continuing')
+
+        query = {'hostname__regex': f'{self.name.lower()}-w[1234567890]+' + self.domain}
+        results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
+                                             urlencode(query))
+
+        worker_urls = pyjq.one('[ .results[].url ]', results)
+        logging.info(f'Identified {len(worker_urls)} workers')
+
+        for worker in worker_urls:
+            logging.info(f'Parsing {worker=}')
+            ralph_worker = WorkerNode(uri=worker, ralph=self.ralph, site=self.name,
+                                      dp_switch=self.dp_switch, config=self.config)
+            ralph_worker.parse()
+            self.workers.append(ralph_worker)
+
+        query = {'hostname': f'{self.name.lower()}-storage' + self.domain}
+        results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
+                                             urlencode(query))
+        storage_url = None
+        try:
+            storage_url = pyjq.one('[ .results[0].url ]', results)[0]
+            logging.info(f'Identified storage {storage_url=}')
+            if not storage_url:
+                raise ValueError
+            self.storage = Storage(uri=storage_url, ralph=self.ralph)
+            self.storage.parse()
+            if self.config and self.config.get(self.name) and self.config.get(self.name).get("storage"):
+                storage_override = self.config.get(self.name).get("storage")
+                self.storage.model.fields['Disk'] = storage_override['Disk']
+        except ValueError:
+            logging.warning('Unable to find storage node in site, continuing')
 
     def __str__(self):
         assets = list()

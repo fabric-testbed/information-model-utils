@@ -110,10 +110,12 @@ The general format example of the file is as follows (SITE1, SITE2 are all-caps 
         "RAM": "2TB",
         "CPU": "4"
       }
-    }
+    },
+    "mac_offset": "0xab"
   }
 }
 ```
+`mac_offset` intended to be used with OpenStack sites to aid unique MAC generation for vNICs.
 
 ### scan_net.py
 

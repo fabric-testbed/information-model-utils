@@ -23,6 +23,7 @@ class WorkerNode(RalphAsset):
     FIELD_MAP = '{Name: .hostname, SN: .sn}'
     # don't start at 1 - that's typically 'uplink'
     OPENSTACK_NIC_INDEX = 10
+    OPENSTACK_VNIC_COUNT = 2000 # randomly set 2000 vNICs to be created
     WORKER_NAME_REGEX = r'^[\w]+-w([\d]+).fabric-testbed.net$'
 
     def __init__(self, *, uri: str, ralph: RalphURI, site: str = None, dp_switch: DPSwitch, config: Dict = None):
@@ -35,27 +36,31 @@ class WorkerNode(RalphAsset):
         self.dp_switch = dp_switch
 
     @staticmethod
-    def generate_openstack_mac(site: str, worker: str) -> str:
+    def generate_openstack_mac(site_offset: str, worker: str, count: int) -> str:
         """
-        generate a unique MAC address for a single OpenStack vNIC on a given worker in a site
-        For site 'UKY2' and worker 'uky2-w2.fabric-testbed.net' it will return
+        generate a unique MAC address for a single OpenStack vNIC on a given
+        a site offset (from config file) and a unique counter
+        :param site_offset - string from config file
+        :param worker - FQDN of worker node
+        :param count - index of the vNIC
         return: string
         """
-        # take the last 4 letters of site name (so we include index like UKY2, UKY3)
-        # take worker index (assume 0-9)
-        # prepend 0xF1 (to make it private)
-        assert worker and site
-        # make site 4-letters
 
-        m = re.match(WorkerNode.WORKER_NAME_REGEX, worker)
-        w_index = int(m[1])
+        assert site_offset and worker
+        assert count < 4096
         mac_bytes = bytearray()
         # prepend 0xF1
         mac_bytes.append(0xf1)
-        # site name always 4 letters (or padded)
-        # WARNING: THIS WILL NOT WORK FOR SITES WITH NAMES LIKE SITE1 - this is 5 letters!
-        mac_bytes.extend(bytes(site[-4:].ljust(4), 'utf-8'))
-        mac_bytes.append(w_index)
+        # prepend site offset (skip '0x')
+        mac_bytes.extend(bytes.fromhex(site_offset[2:]))
+        # add worker
+        m = re.match(WorkerNode.WORKER_NAME_REGEX, worker)
+        if not m:
+            raise RuntimeError(f'Worker name {worker} doesnt match expected regex')
+        w_index = int(m[1])
+        mac_bytes.extend(w_index.to_bytes(length=1, byteorder='big'))
+        # add counter (up to 4096)
+        mac_bytes.extend(count.to_bytes(length=3, byteorder='big'))
         assert len(mac_bytes) == 6
         mac_string = binascii.hexlify(mac_bytes, ':', 1)
         return mac_string.decode('utf-8')
@@ -100,27 +105,33 @@ class WorkerNode(RalphAsset):
         if self.LIGHTWEIGHT_SITE:
             logging.debug('Since this is a lightweight site, skipping looking for ethernet ports, '
                           'adding OpenStack parent port and vNICs instead')
+            if self.config and self.config.get(self.site) and self.config.get(self.site).get('mac_offset'):
+                mac_offset = self.config.get(self.site).get('mac_offset')
+            else:
+                raise RuntimeError('For OpenStack sites you must specify "mac_offset" under site static configuration')
+
             port_index = 1
             # 'parent'
             port = EthernetCardPort(uri='no-url', ralph=self.ralph)
             port.force_values(model='OpenStack-vNIC', desc='OpenStack parent NIC', speed='1Gbps',
-                              bdf='0000:00:00.0', mac=self.generate_openstack_mac(self.site, self.fields['Name']),
+                              bdf='0000:00:00.0', mac=self.generate_openstack_mac(mac_offset, self.fields['Name'], 1),
                               peer_port=str(self.OPENSTACK_NIC_INDEX))
             self.components['port-' + str(port_index)] = port
             port_index += 1
             if not self.dp_switch.vlan_ranges:
                 raise RuntimeError('OpenStack sites should define at least local VLANs '
                                    '(and usually AL2S vlans) as custom fields of dp switch in Ralph, none found')
-            # Add children with bdf=0000:00:00.0 and vBDF=0000:00:00.0 and mapped to VLANs that we get from DP switch
+
+            # Add children with bdf=0000:00:00.0 and vBDF=0000:AB:CD.0 have VLAN 0 set (VLANs are saved on NetworkService)
             # NOTE: vfs have 'vBDF' set to their own and 'BDF' set to parent.
-            for vlan in self.dp_switch.vlan_ranges:
+            for vnic_idx in range(2, self.OPENSTACK_VNIC_COUNT):
                 port = EthernetCardPort(uri='no-url', ralph=self.ralph)
                 # make all vbdfs different and reflection of VLAN tag
-                vbdf_diff = binascii.hexlify(vlan.to_bytes(2, 'big'), ':', 1).decode('utf-8')
-                port.force_values(model='OpenStack-vNIC', desc='OpenStack vNIC', speed='1Gbps', vlan=str(vlan),
+                vbdf_diff = binascii.hexlify(vnic_idx.to_bytes(2, 'big'), ':', 1).decode('utf-8')
+                port.force_values(model='OpenStack-vNIC', desc='OpenStack vNIC', speed='1Gbps', vlan='0',
                                   bdf='0000:00:00.0', vbdf='0000:' + vbdf_diff + '.0',
                                   ctype=RalphAssetType.EthernetCardVF,
-                                  mac=self.generate_openstack_mac(self.site, self.fields['Name']),
+                                  mac=self.generate_openstack_mac(mac_offset, self.fields['Name'], vnic_idx),
                                   peer_port=str(self.OPENSTACK_NIC_INDEX))
                 self.components['port-' + str(port_index)] = port
                 port_index += 1

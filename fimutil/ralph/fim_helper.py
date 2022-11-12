@@ -17,7 +17,7 @@ from fimutil.ralph.site import Site
 from fimutil.ralph.gpu import GPU
 from fimutil.ralph.ethernetport import EthernetCardPort, EthernetPort
 from fimutil.ralph.nvme import NVMeDrive
-from fimutil.ralph.asset import RalphAssetType
+from fimutil.ralph.asset import RalphAssetType, RalphAsset
 
 SIZE_REGEX = "([\\d.]+)[ ]?([MGTP])B?"
 SPEED_REGEX = "([\\d.]+)[ ]?([MGT])(bps)?"
@@ -417,13 +417,26 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
     dp = topo.add_node(name=dp_name[0],
                        node_id=dp_name[1],
                        site=site.name, ntype=NodeType.Switch, stitch_node=True)
-    dp_service_type = ServiceType.MPLS
-    # if this is a lightweight site and AL2S_vlans are specified, we use VLAN service
-    if site.dp_switch.fields['AL2S_SWITCH']:
-        dp_service_type = ServiceType.VLAN
 
-    dp_ns = dp.add_network_service(name=dp.name + '-ns', node_id=dp.node_id + '-ns',
-                                   nstype=dp_service_type, stitch_node=True)
+    # if this is a lightweight site and AL2S_vlans are specified, we use VLAN service
+    if RalphAsset.LIGHTWEIGHT_SITE and site.dp_switch.fields.get('AL2S_SWITCH'):
+        dp_service_type = ServiceType.VLAN
+        # for OpenStack sites add VLANs and other info
+        vlans = list()
+        peer_vlans = list()
+        if site.dp_switch.fields.get('Local_vlans'):
+            vlans.extend(site.dp_switch.fields['Local_vlans'].split(','))
+        if site.dp_switch.fields.get('AL2S_vlans'):
+            peer_vlans.extend(site.dp_switch.fields['AL2S_vlans'].split(','))
+        dp_ns = dp.add_network_service(name=dp.name + '-ns', node_id=dp.node_id + '-ns',
+                                       labels=Labels(vlan_range=vlans),
+                                       peer_labels=Labels(vlan_range=peer_vlans,
+                                                          device_name=site.dp_switch.fields['AL2S_SWITCH']),
+                                       nstype=dp_service_type, stitch_node=True)
+    else:
+        dp_service_type = ServiceType.MPLS
+        dp_ns = dp.add_network_service(name=dp.name + '-ns', node_id=dp.node_id + '-ns',
+                                       nstype=dp_service_type, stitch_node=True)
 
     # add switch ports (they are stitch nodes, so just need to get their ids right)
     link_idx = 1

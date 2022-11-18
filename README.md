@@ -111,11 +111,12 @@ The general format example of the file is as follows (SITE1, SITE2 are all-caps 
         "CPU": "4"
       }
     },
-    "mac_offset": "0xab"
+    "mac_offset": "f2:ab"
   }
 }
 ```
-`mac_offset` intended to be used with OpenStack sites to aid unique MAC generation for vNICs.
+`mac_offset` intended to be used with OpenStack sites to aid unique MAC generation for vNICs. Note
+that the first octet of mac_offset must be [even](https://github.com/openstack/neutron-lib/blob/cf494c8be10b36daf238fa12cf7c615656e6640d/neutron_lib/api/validators/__init__.py#L40).
 
 ### scan_net.py
 

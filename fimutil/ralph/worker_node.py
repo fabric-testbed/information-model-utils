@@ -25,6 +25,8 @@ class WorkerNode(RalphAsset):
     OPENSTACK_NIC_INDEX = 10
     OPENSTACK_VNIC_COUNT = 2000 # randomly set 2000 vNICs to be created
     WORKER_NAME_REGEX = r'^[\w]+-w([\d]+).fabric-testbed.net$'
+    # first octet must be even
+    OPENSTACK_NIC_MAC_REG = r'([a-fA-F0-9][aceACE02468])[:-]([a-fA-F0-9]{2})'
 
     def __init__(self, *, uri: str, ralph: RalphURI, site: str = None, dp_switch: DPSwitch, config: Dict = None):
         super().__init__(uri=uri, ralph=ralph)
@@ -40,7 +42,7 @@ class WorkerNode(RalphAsset):
         """
         generate a unique MAC address for a single OpenStack vNIC on a given
         a site offset (from config file) and a unique counter
-        :param site_offset - string from config file
+        :param site_offset - string from config file representing two first octets in hex (0xabcd)
         :param worker - FQDN of worker node
         :param count - index of the vNIC
         return: string
@@ -48,11 +50,15 @@ class WorkerNode(RalphAsset):
 
         assert site_offset and worker
         assert count < 4096
+
+        m = re.match(WorkerNode.OPENSTACK_NIC_MAC_REG, site_offset)
+        if not m:
+            raise RuntimeError(f'OpenStack MAC address offset for the site must match the '
+                               f'following regex: {WorkerNode.OPENSTACK_NIC_MAC_REG}')
+
         mac_bytes = bytearray()
-        # prepend 0xF1
-        mac_bytes.append(0xf1)
-        # prepend site offset (skip '0x')
-        mac_bytes.extend(bytes.fromhex(site_offset[2:]))
+        # prepend site offset
+        mac_bytes.extend(bytes.fromhex(m[1]+m[2]))
         # add worker
         m = re.match(WorkerNode.WORKER_NAME_REGEX, worker)
         if not m:

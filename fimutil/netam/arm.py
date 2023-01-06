@@ -118,6 +118,15 @@ class NetworkARM:
                 ipv4_ns = switch.add_network_service(name=switch.name + '-ipv4-ns', layer=f.Layer.L3,
                                                      labels=ipv4_ns_labs,
                                                      node_id=switch.node_id + '-ipv4-ns', nstype=f.ServiceType.FABNetv4)
+                ipv4ext_ns_labs = f.Labels()
+                if 'ipv4_public_net' in site_info:
+                    ipv4ext_ns_labs = f.Labels.update(ipv4ext_ns_labs, ipv4_subnet=site_info['ipv4_public_net'])
+                if 'ipv4_vlan_range' in site_info:
+                    ipv4ext_ns_labs = f.Labels.update(ipv4ext_ns_labs, vlan_range=site_info['ipv4_vlan_range'].split(','))
+                ipv4ext_ns = switch.add_network_service(name=switch.name + '-ipv4ext-ns', layer=f.Layer.L3,
+                                                     labels=ipv4ext_ns_labs,
+                                                     node_id=switch.node_id + '-ipv4ext-ns', nstype=f.ServiceType.FABNetv4Ext)
+
                 ipv6_ns_labs = f.Labels()
                 if 'ipv6_net' in site_info:
                     ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, ipv6_subnet=site_info['ipv6_net'])
@@ -126,6 +135,14 @@ class NetworkARM:
                 ipv6_ns = switch.add_network_service(name=switch.name + '-ipv6-ns', layer=f.Layer.L3,
                                                      labels=ipv6_ns_labs,
                                                      node_id=switch.node_id + '-ipv6-ns', nstype=f.ServiceType.FABNetv6)
+                ipv6ext_ns_labs = f.Labels()
+                if 'ipv6_net' in site_info:
+                    ipv6ext_ns_labs = f.Labels.update(ipv6ext_ns_labs, ipv6_subnet=site_info['ipv6_net'])
+                if 'ipv6_vlan_range' in site_info:
+                    ipv6ext_ns_labs = f.Labels.update(ipv6ext_ns_labs, vlan_range=site_info['ipv6_vlan_range'].split(','))
+                ipv6ext_ns = switch.add_network_service(name=switch.name + '-ipv6ext-ns', layer=f.Layer.L3,
+                                                     labels=ipv6ext_ns_labs,
+                                                     node_id=switch.node_id + '-ipv6ext-ns', nstype=f.ServiceType.FABNetv6Ext)
 
                 l3vpn_ns_labs = f.Labels()
                 l3vpn_ns_labs = f.Labels.update(l3vpn_ns_labs, asn='398900')

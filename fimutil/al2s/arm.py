@@ -5,9 +5,10 @@ from fim.slivers.network_node import NodeType
 from fim.slivers.network_service import ServiceType
 
 from fimutil.al2s.oess import OessClient
-import os
 from yaml import load as yload
 from yaml import FullLoader
+import os
+import re
 
 
 def _update_vlan_label(labs, vlan: str):
@@ -58,7 +59,7 @@ class OessARM:
                                            stitch_node=False)
 
         l3vpn_ns_labs = f.Labels()
-        l3vpn_ns_labs = f.Labels.update(l3vpn_ns_labs, asn='398900')
+        l3vpn_ns_labs = f.Labels.update(l3vpn_ns_labs, asn='55038')
         # ? add more AL2S site-wide labels (per-site vlan_range and ipv4_range for bgp peering)
         l3vpn_ns = switch.add_network_service(name=switch.name + '-l3vpn-ns', layer=f.Layer.L3,
                                               labels=l3vpn_ns_labs,
@@ -97,9 +98,9 @@ class OessARM:
                         or port['cloud_interconnect_type'] == 'gcp-partner-interconnect' \
                         or port['cloud_interconnect_type'] == 'azure-express-route':
                     # facility by cloud peering port
-                    fac_name = f"Cloud_Facility:{port['cloud_provider']}"
+                    fac_name = re.sub("\s|:|\(|\)", "_", f"Cloud_Facility:{port['cloud_provider']}")
                     # print(f'Facility: {fac_name}\n')
-                    faci_name = f"{port['cloud_provider']}:{port['cloud_region']}:{port_name}"
+                    faci_name = re.sub("\s|:|\(|\)", "_", f"{port['cloud_provider']}:{port['cloud_region']}:{port_name}")
                     # facility_port attributes
                     facility_port_labs = f.Labels()
                     facility_port_labs = _update_vlan_label(facility_port_labs, vlan_range)
@@ -121,7 +122,7 @@ class OessARM:
                     else:
                         facn = self.topology.add_node(name=fac_name, node_id=f'{port_nid}:facility+{fac_name}',
                                                          site=port['cloud_provider'], ntype=NodeType.Facility)
-                        facs = facn.add_network_service(name=fac_name + '-ns', node_id=f'{port_nid}:facility+{fac_name}-ns',
+                        facs = facn.add_network_service(name=facn.name + '-ns', node_id=f'{port_nid}:facility+{fac_name}-ns',
                                                         nstype=ServiceType.VLAN)
                         faci = facs.add_interface(name=faci_name, node_id=f"{port_nid}:{fac_name}:facility_port",
                                                                      itype=InterfaceType.FacilityPort,

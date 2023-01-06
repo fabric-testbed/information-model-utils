@@ -47,7 +47,12 @@ class NsoClient:
         # params = "fields=name;admin-status;phys-address;speed;ietf-ip:ipv4;ietf-ip:ipv6"
         # ep = f"{base}?{params}"
         ep = f"tailf-ncs:devices/device={device_name}/live-status/ietf-interfaces:interfaces-state/interface"
-        ret_json = self._get(ep)
+        try:
+            ret_json = self._get(ep)
+        except NetAmNsoError as e:
+            if 'Empty response' in str(e):  # skip devices that are not ready
+                return None
+            raise e
         if 'ietf-interfaces:interface' not in ret_json:
             return None
             # raise NetAmNsoError(f"GET: {self.nso_url}/{ep}: 'ietf-interfaces:interface' unfound in response")
@@ -58,7 +63,12 @@ class NsoClient:
         # params = "fields=name;admin-status;phys-address;speed;ietf-ip:ipv4;ietf-ip:ipv6"
         # ep = f"{base}?{params}"
         ep = f"tailf-ncs:devices/device={device_name}/config/tailf-ned-cisco-ios-xr:router/isis/tag"
-        ret_json = self._get(ep)
+        try:
+            ret_json = self._get(ep)
+        except NetAmNsoError as e:
+            if 'Empty response' in str(e):  # skip devices that are not ready
+                return None
+            raise e
         if 'tailf-ned-cisco-ios-xr:tag' not in ret_json:
             return None
         tags = ret_json['tailf-ned-cisco-ios-xr:tag']

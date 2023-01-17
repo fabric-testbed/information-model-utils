@@ -121,7 +121,7 @@ class OessARM:
                                                interfaces=[sp, faci])  # add additional interface to the facility
                     else:
                         facn = self.topology.add_node(name=fac_name, node_id=f'{port_nid}:facility+{fac_name}',
-                                                         site=port['cloud_provider'], ntype=NodeType.Facility)
+                                                         site=re.sub("\s|:|\(|\)", "_", port['cloud_provider']), ntype=NodeType.Facility)
                         facs = facn.add_network_service(name=facn.name + '-ns', node_id=f'{port_nid}:facility+{fac_name}-ns',
                                                         nstype=ServiceType.VLAN)
                         faci = facs.add_interface(name=faci_name, node_id=f"{port_nid}:{fac_name}:facility_port",

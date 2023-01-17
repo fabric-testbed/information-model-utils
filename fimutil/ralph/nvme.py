@@ -11,7 +11,7 @@ class NVMeDrive(RalphAsset):
     # "Description": "Dell Express Flash NVMe P4510 1TB SFF in PCIe
     # SSD Slot 22 in Bay 2 (0000:21:00.0)", "BDF": "0000:21:00.0"
     REGEX_FIELDS = {'BDF': ["Description", ".+\\(([0-9a-f:.]+)\\).*"],
-                    'Model': ["Description", ".+(P4510|CD5) ([\\w]+).*"],
+                    'Model': ["Description", ".+(P4510|CD5|CD6) ([\\w]+).*"],
                     'Disk': ["Description", ".+ ([\\d]+[MGTP]B|[\\d]+[MGTP]) .*"]}
 
     def __init__(self, *, uri: str, ralph: RalphURI):
@@ -20,9 +20,13 @@ class NVMeDrive(RalphAsset):
 
     def parse(self):
         super().parse()
-        if 'NVMe' not in self.fields['Description'] and 'CD5' not in self.fields['Description']:
+        # this is a hack around NVMe model names
+        if 'NVMe' not in self.fields['Description'] and \
+                'CD5' not in self.fields['Description'] and \
+                'CD6' not in self.fields['Description']:
             raise RalphAssetMimatch('This is not an NVMe drive')
-        if self.fields['Model'] == 'CD5':
+        if self.fields['Model'] == 'CD5' or \
+                self.fields['Model'] == 'CD6':
             # FIXME: temporary override to old model
             self.fields['Model'] = "P4510"
 

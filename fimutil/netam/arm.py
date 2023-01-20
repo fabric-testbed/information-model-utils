@@ -245,8 +245,12 @@ class NetworkARM:
                             stitch_port_name = al2s_stitch_info['stitch_port'].replace(' ', '')
                             if stitch_port_name != port_name:
                                 continue
+                            al2s_port_labs = f.Labels()
+                            if 'vlan_range' in al2s_stitch_info:
+                                al2s_port_labs = f.Labels().update(al2s_port_labs, vlan_range=al2s_stitch_info['vlan_range'].split(','))
                             al2s_sp = al2s_l2_ns.add_interface(name=al2s_port_name, itype=f.InterfaceType.TrunkPort,
-                                                     node_id='port+al2s:'+al2s_port_name, stitch_node=True)
+                                                    labels=al2s_port_labs, node_id='port+al2s:'+al2s_port_name,
+                                                    stitch_node=True)
                             # connect it to the FABRIC port via link
                             self.topology.add_link(name=al2s_port_name + '-link',
                                                    node_id=f'{port_nid}:{al2s_port_name}+link',

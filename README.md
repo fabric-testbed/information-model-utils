@@ -1,5 +1,3 @@
-[![Requirements Status](https://requires.io/github/fabric-testbed/information-model-utils/requirements.svg?branch=main)](https://requires.io/github/fabric-testbed/information-model-utils/requirements/?branch=main)
-
 [![PyPI](https://img.shields.io/pypi/v/fim-utils?style=plastic)](https://pypi.org/project/fim-utils/)
 
 # Information Model Utilities

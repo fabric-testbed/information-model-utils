@@ -5,10 +5,12 @@ from fim.slivers.network_node import NodeType
 from fim.slivers.network_service import ServiceType
 
 from fimutil.al2s.oess import OessClient
+from fimutil.al2s.cloud_cfg import REGION_NAME_MAP
 from yaml import load as yload
 from yaml import FullLoader
 import os
 import re
+
 
 
 def _update_vlan_label(labs, vlan: str):
@@ -19,6 +21,12 @@ def _update_vlan_label(labs, vlan: str):
             return f.Labels.update(labs, vlan_range=vlan.split(','))
         except caplab.LabelException:
             return labs
+
+
+def _tralsate_cloud_region_name(name: str):
+    if name not in REGION_NAME_MAP.keys():
+        return name
+    return REGION_NAME_MAP[name]
 
 
 class OessARM:
@@ -44,8 +52,8 @@ class OessARM:
         # start topology model
         self.topology = f.SubstrateTopology()
         model_name = 'AL2S OESS'
-        site_name = "Internet2"
-        node_name = "AL2S"
+        site_name = "AL2S"
+        node_name = "OESS"
         node_nid = "node+" + node_name
         switch = self.topology.add_node(name=node_name, model=model_name, site=site_name,
                                         node_id=node_nid, ntype=f.NodeType.Switch,
@@ -100,34 +108,39 @@ class OessARM:
                     # facility by cloud peering port
                     fac_name = re.sub("\s|:|\(|\)", "_", f"Cloud_Facility:{port['cloud_provider']}")
                     # print(f'Facility: {fac_name}\n')
-                    faci_name = re.sub("\s|:|\(|\)", "_", f"{port['cloud_provider']}:{port['cloud_region']}:{port_name}")
+                    faci_name = re.sub("\s|:|\(|\)", "_",
+                                       f"{port['cloud_provider']}:{port['cloud_region']}:{port_name}")
                     # facility_port attributes
                     facility_port_labs = f.Labels()
                     facility_port_labs = _update_vlan_label(facility_port_labs, vlan_range)
-                    facility_port_labs = f.Labels.update(facility_port_labs, device_name=port['cloud_region'])
-                    facility_port_labs = f.Labels.update(facility_port_labs, local_name=port_name + ':peer')
+                    facility_port_labs = f.Labels.update(facility_port_labs,
+                                                         region=_tralsate_cloud_region_name(port['cloud_region']))
+                    facility_port_labs = f.Labels.update(facility_port_labs, device_name=port['device_name'])
+                    facility_port_labs = f.Labels.update(facility_port_labs, local_name=port['interface_name'])
                     facility_port_caps = f.Capacities()
                     facility_port_caps = f.Labels.update(facility_port_caps, bw=speed_gbps)
                     if fac_name in cloud_facs:
                         facs = cloud_facs[fac_name]
                         # add an interface / facility_port to the facility
                         faci = facs.add_interface(name=faci_name, node_id=f"{port_nid}:{fac_name}:facility_port",
-                                                                     itype=InterfaceType.FacilityPort,
-                                                                     labels=facility_port_labs,
-                                                                     capacities=facility_port_caps)
+                                                  itype=InterfaceType.FacilityPort,
+                                                  labels=facility_port_labs,
+                                                  capacities=facility_port_caps)
                         self.topology.add_link(name=fac_name + '-link:' + port_name,
                                                node_id=f'{port_nid}:facility+{fac_name}+link',
                                                ltype=f.LinkType.L2Path,  # could be Patch too
                                                interfaces=[sp, faci])  # add additional interface to the facility
                     else:
                         facn = self.topology.add_node(name=fac_name, node_id=f'{port_nid}:facility+{fac_name}',
-                                                         site=re.sub("\s|:|\(|\)", "_", port['cloud_provider']), ntype=NodeType.Facility)
-                        facs = facn.add_network_service(name=facn.name + '-ns', node_id=f'{port_nid}:facility+{fac_name}-ns',
+                                                      site=re.sub("\s|:|\(|\)", "_", port['cloud_provider']),
+                                                      ntype=NodeType.Facility)
+                        facs = facn.add_network_service(name=facn.name + '-ns',
+                                                        node_id=f'{port_nid}:facility+{fac_name}-ns',
                                                         nstype=ServiceType.VLAN)
                         faci = facs.add_interface(name=faci_name, node_id=f"{port_nid}:{fac_name}:facility_port",
-                                                                     itype=InterfaceType.FacilityPort,
-                                                                     labels=facility_port_labs,
-                                                                     capacities=facility_port_caps)
+                                                  itype=InterfaceType.FacilityPort,
+                                                  labels=facility_port_labs,
+                                                  capacities=facility_port_caps)
 
                         if 'description' in port:
                             faci.details = port['description']

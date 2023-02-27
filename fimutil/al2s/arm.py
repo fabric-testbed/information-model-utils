@@ -53,7 +53,7 @@ class OessARM:
         self.topology = f.SubstrateTopology()
         model_name = 'AL2S OESS'
         site_name = "AL2S"
-        node_name = "OESS"
+        node_name = "AL2S"
         node_nid = "node+" + node_name
         switch = self.topology.add_node(name=node_name, model=model_name, site=site_name,
                                         node_id=node_nid, ntype=f.NodeType.Switch,
@@ -87,7 +87,7 @@ class OessARM:
             # add capabilities
             port_caps = f.Capacities(bw=speed_gbps)
             # add labels
-            port_labs = f.Labels(local_name=port_name)
+            port_labs = f.Labels(device_name=port['device_name'], local_name=port['interface_name'])
             port_labs = _update_vlan_label(port_labs, vlan_range)
 
             # TODO: identify FABRIC facing interface

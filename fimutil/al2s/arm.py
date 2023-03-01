@@ -106,9 +106,9 @@ class OessARM:
                         or port['cloud_interconnect_type'] == 'gcp-partner-interconnect' \
                         or port['cloud_interconnect_type'] == 'azure-express-route':
                     # facility by cloud peering port
-                    fac_name = re.sub("\s|:|\(|\)", "_", f"Cloud_Facility:{port['cloud_provider']}")
+                    fac_name = re.sub("\s|:|\(|\)", "-", f"Cloud-Facility:{port['cloud_provider']}")
                     # print(f'Facility: {fac_name}\n')
-                    faci_name = re.sub("\s|:|\(|\)", "_",
+                    faci_name = re.sub("\s|:|\(|\)", "-",
                                        f"{port['cloud_provider']}:{port['cloud_region']}:{port_name}")
                     # facility_port attributes
                     facility_port_labs = f.Labels()
@@ -132,7 +132,7 @@ class OessARM:
                                                interfaces=[sp, faci])  # add additional interface to the facility
                     else:
                         facn = self.topology.add_node(name=fac_name, node_id=f'{port_nid}:facility+{fac_name}',
-                                                      site=re.sub("\s|:|\(|\)", "_", port['cloud_provider']),
+                                                      site=re.sub("\s|:|\(|\)", "-", port['cloud_provider']),
                                                       ntype=NodeType.Facility)
                         facs = facn.add_network_service(name=facn.name + '-ns',
                                                         node_id=f'{port_nid}:facility+{fac_name}-ns',

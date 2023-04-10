@@ -10,7 +10,7 @@ from fim.user.component import Component, ComponentType
 from fim.user.link import LinkType
 from fim.user.network_service import ServiceType
 from fim.slivers.identifiers import *
-from fim.slivers.capacities_labels import Capacities, Labels, Location
+from fim.slivers.capacities_labels import Capacities, Labels, Location, Flags
 
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.site import Site
@@ -297,7 +297,7 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                          disk=disk_size_int)
         w = topo.add_node(name=worker.fields['Name'], model=worker.model.fields['Model'],
                           node_id=worker.fields['SN'], ntype=NodeType.Server,
-                          capacities=cap, site=site.name, location=loc)
+                          capacities=cap, site=site.name, location=loc, flags=Flags(ptp=worker.ptp))
         #
         # handle various component types
         #

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import pyjq
 
-GPU_MODELS = ['Quadro RTX 6000/8000', 'Tesla T4']
+GPU_MODELS = ['Quadro RTX 6000/8000', 'Tesla T4', 'A40', 'A30 PCIe']
 
 
 @dataclass(frozen=True)

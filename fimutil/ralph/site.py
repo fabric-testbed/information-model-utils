@@ -3,6 +3,7 @@ from abc import ABC
 from urllib.parse import urlencode
 import pyjq
 from typing import Dict
+import json
 
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.worker_node import WorkerNode
@@ -22,6 +23,7 @@ class Site:
         self.workers = list()
         self.storage = None
         self.dp_switch = None
+        self.ptp = False
         self.name = site_name
         self.domain = domain
         self.ralph = ralph
@@ -34,6 +36,7 @@ class Site:
         - workers: <site>-w[\\d]+.fabric-testbed.net
         - storage: <site>-storage.fabric-testbed.net
         - dp switch: <site>-data-sw.fabric-testbed.net
+        - PTP server: <site>-time.fabric-testbed.net
         """
         query = {'hostname': f'{self.name.lower()}-data-sw' + self.domain}
         results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
@@ -61,6 +64,19 @@ class Site:
         except ValueError:
             logging.warning('Unable to find a dataplane switch in site, continuing')
 
+        query = {'hostname': f'{self.name.lower()}-time' + self.domain}
+        results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
+                                             urlencode(query))
+        ptp_url = None
+        try:
+            ptp_url = pyjq.one('[ .results[0].url ]', results)[0]
+            logging.info(f'Identified PTP server {ptp_url=}')
+            if not ptp_url:
+                raise ValueError
+            self.ptp = True
+        except ValueError:
+            logging.warning('Unable to find PTP server in site, continuing')
+
         query = {'hostname__regex': f'{self.name.lower()}-w[1234567890]+' + self.domain}
         results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
                                              urlencode(query))
@@ -71,7 +87,7 @@ class Site:
         for worker in worker_urls:
             logging.info(f'Parsing {worker=}')
             ralph_worker = WorkerNode(uri=worker, ralph=self.ralph, site=self.name,
-                                      dp_switch=self.dp_switch, config=self.config)
+                                      dp_switch=self.dp_switch, config=self.config, ptp=self.ptp)
             ralph_worker.parse()
             self.workers.append(ralph_worker)
 
@@ -105,9 +121,14 @@ class Site:
     def to_json(self):
         ret = dict()
         if self.storage:
-            ret["Storage"] = self.storage.fields
+            ret["Storage"] = self.storage.fields.copy()
         if self.dp_switch:
-            ret["DataPlane"] = self.dp_switch.fields
+            ret["DataPlane"] = self.dp_switch.fields.copy()
+        # collect port information from all workers
+        dp_ports = list()
+        for w in self.workers:
+            dp_ports.extend(w.get_dp_ports())
+        ret["DataPlane"]["Connected_ports"] = dp_ports
         n = list()
         for w in self.workers:
             n.append(w.to_json())

@@ -170,10 +170,12 @@ class OessClient:
                     vlan_range = ""
                     for acl in interface['acls']:
                         if acl['workgroup_id'] == workgid:
+                            new_range = acl["start"] + "-" + acl["end"]
                             if vlan_range:
-                                vlan_range = vlan_range + ',' + acl["start"] + "-" + acl["end"]
+                                if (vlan_range.find(new_range) == -1):
+                                    vlan_range = vlan_range + ',' + new_range
                             else:
-                                vlan_range = acl["start"] + "-" + acl["end"]
+                                vlan_range = new_range
                     
                     if vlan_range: 
                         endpoint['name'] = interface['node'] + ':' + interface['name']
@@ -206,10 +208,12 @@ class OessClient:
                                     endpoint['cloud_provider'] = grandparent_name
                             vlan_range = ""
                             for acl in interface['acls']:
+                                new_range = acl["start"] + "-" + acl["end"]
                                 if vlan_range:
-                                    vlan_range = vlan_range + ',' + acl["start"] + "-" + acl["end"]
+                                    if (vlan_range.find(new_range) == -1):
+                                        vlan_range = vlan_range + ',' + new_range
                                 else:
-                                    vlan_range = acl["start"] + "-" + acl["end"]
+                                    vlan_range = new_range
                             endpoint['vlan_range'] = vlan_range
                             if endpoint not in endpoint_list:
                                 endpoint_list.append(endpoint)

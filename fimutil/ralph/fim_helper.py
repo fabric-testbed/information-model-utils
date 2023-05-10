@@ -15,6 +15,7 @@ from fim.slivers.capacities_labels import Capacities, Labels, Location, Flags
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.site import Site
 from fimutil.ralph.gpu import GPU
+from fimutil.ralph.fpga import FPGA
 from fimutil.ralph.ethernetport import EthernetCardPort, EthernetPort
 from fimutil.ralph.nvme import NVMeDrive
 from fimutil.ralph.asset import RalphAssetType, RalphAsset
@@ -188,6 +189,33 @@ def __add_gpu(node: Node, gpu_name: str, gpu: GPU) -> None:
                        details=gpu.Description)
 
 
+def __add_fpga(node: Node, fpga_name: str, fpga: FPGA, port_map: Dict[str, str]) -> None:
+    """
+    Add FPGA to a node
+    """
+    interface_node_ids = list()
+    interface_labels = list()
+    fpga_node_id = f'fpga-{fpga.SN}'
+    port_id = 1
+    for p in fpga.Ports:
+        interface_node_ids.append(f'{fpga_node_id}-p{port_id}')
+        interface_labels.append(Labels(vlan_range='1-4096'))
+        port_id += 1
+    c = node.add_component(name=node.name + '-' + fpga_name,
+                           model=fpga.Model,
+                           node_id=fpga_node_id,
+                           ctype=ComponentType.FPGA,
+                           capacities=Capacities(unit=1),
+                           labels=Labels(bdf=fpga.BDF, usb_id=fpga.USB_ID),
+                           interface_node_ids=interface_node_ids,
+                           interface_labels=interface_labels,
+                           details=fpga.Description)
+    for intf in c.interface_list:
+        # use local name index (p1, p2 etc) to index into the Ports array
+        port_index = int(intf.labels.local_name[1:])
+        port_map[fpga.Ports[port_index - 1]] = intf
+
+
 def __add_nvme(node: Node, nvme_name: str, nvme: NVMeDrive) -> None:
     """
     Add an NVME drive to a topology node
@@ -311,6 +339,8 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                 __process_card_port(comp, org)
             elif isinstance(comp, GPU):
                 __add_gpu(w, comp_name, comp)
+            elif isinstance(comp, FPGA):
+                __add_fpga(w, comp_name, comp, port_map)
 
         org.organize()
 

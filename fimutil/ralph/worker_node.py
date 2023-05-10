@@ -11,6 +11,7 @@ from fimutil.ralph.asset import RalphAsset, RalphAssetType, RalphJSONError, Ralp
 from fimutil.ralph.nvme import NVMeDrive
 from fimutil.ralph.ethernetport import EthernetCardPort
 from fimutil.ralph.gpu import GPU
+from fimutil.ralph.fpga import FPGA
 from fimutil.ralph.model import WorkerModel
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.dp_switch import DPSwitch
@@ -182,6 +183,12 @@ class WorkerNode(RalphAsset):
             self.components['gpu-' + str(gpu_index)] = gpu
             gpu_index += 1
 
+        fpgas = FPGA.find_fpgas(self.raw_json_obj)
+        fpga_index = 1
+        for fpga in fpgas:
+            self.components['fpga-' + str(fpga_index)] = fpga
+            fpga_index += 1
+
     def __str__(self):
         retl = list()
         if RalphAsset.PRINT_SUMMARY:
@@ -219,7 +226,7 @@ class WorkerNode(RalphAsset):
                 d['Type'] = str(comp.type)
                 comps.append(d)
             elif not comp.__dict__.get('type'):
-                # GPU
+                # GPU or FPGA
                 d = comp.__dict__.copy()
                 d['Type'] = str(RalphAssetType.GPU)
                 comps.append(d)
@@ -235,5 +242,7 @@ class WorkerNode(RalphAsset):
             if comp.__dict__.get('type') and comp.type == RalphAssetType.EthernetCardPF:
                 if comp.fields.get('Peer_port'):
                     dp_ports.append(comp.fields.get('Peer_port'))
+            if isinstance(comp, FPGA):
+                dp_ports.extend(comp.Ports)
 
         return dp_ports

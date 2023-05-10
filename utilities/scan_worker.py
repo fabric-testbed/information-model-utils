@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     ralph = RalphURI(token=args.token, base_uri=args.base_uri, disable_ssl=args.no_ssl)
     worker = WorkerNode(uri=args.base_uri + 'data-center-assets/?hostname=' + args.worker,
-                        ralph=ralph)
+                        ralph=ralph, dp_switch=None)
     worker.parse()
     print(worker)
 

@@ -16,6 +16,7 @@ class GPU:
     Model: str
     Description: str
     BDF: str
+    NUMA: str
 
     @staticmethod
     def find_gpus(node_raw_json) -> List[Any]:
@@ -31,5 +32,7 @@ class GPU:
                     model = gpu_model
                     description = custom_fields[field]
                     bdf = custom_fields[field + '_pci_id']
-                    ret.append(GPU(model, description, bdf))
+                    # -1 means unknown
+                    numa = custom_fields.get(field + '_numa_node', '-1')
+                    ret.append(GPU(model, description, bdf, numa))
         return ret

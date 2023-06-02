@@ -24,6 +24,7 @@ class FPGA:
     USB_ID: str
     SN: str
     Ports: list[str]
+    NUMA: str
 
     @staticmethod
     def find_fpgas(node_raw_json) -> List[Any]:
@@ -42,6 +43,8 @@ class FPGA:
                         model = fpga_model
                         description = custom_fields[field]
                         bdf = custom_fields[field + '_pci_id']
+                        # -1 means unknown
+                        numa = custom_fields.get(field + '_numa_node', '-1')
                         sn = custom_fields[f'fpga{fpga_index}_sn']
                         usb_id = custom_fields[f'fpga{fpga_index}_usb_device_id']
                         for i in range(1, MAX_PORTS):
@@ -53,7 +56,7 @@ class FPGA:
                                     ports.append(matches.group(1))
                         if len(ports) == 0:
                             logging.error(f'Unable to find any ports for FPGA {model}, expecting fpgaX_port_1 etc')
-                        ret.append(FPGA(model, description, bdf, usb_id, sn, ports))
+                        ret.append(FPGA(model, description, bdf, usb_id, sn, ports, numa))
                         fpga_index += 1
                 except KeyError:
                     logging.error('Unable to find one of the expected FPGA fields: fpgaX_[usb_device_id, port_1, port_2]')

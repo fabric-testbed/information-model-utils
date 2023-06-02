@@ -1,5 +1,3 @@
-import logging
-import re
 from fimutil.ralph.asset import RalphAsset, RalphAssetType, RalphAssetMimatch
 
 from fimutil.ralph.ralph_uri import RalphURI
@@ -43,7 +41,8 @@ class EthernetCardPort(EthernetPort):
                     'Peer_port': ['Connection', ".+port ([\\w\\d/]+) .+"],
                     'VLAN': ['Connection', ".+ VLAN ([\\d]+) on.+"],
                     'Model': ['Description', ".+\\[([\\w-]+).*?\\].*"],
-                    'Slot': ['Description', ".+Slot ([\\d]+) .*"]}
+                    'Slot': ['Description', ".+Slot ([\\d]+) .*"],
+                    'NUMA': ['Description', '.+ NUMA Node ([\\+\\-\\d]+).*']}
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         super().__init__(uri=uri, ralph=ralph)
@@ -66,6 +65,7 @@ class EthernetCardPort(EthernetPort):
                      vlan: str or None = None,
                      model: str or None = None,
                      slot: str or None = None,
+                     numa: str or None = None,
                      ctype: RalphAssetType = RalphAssetType.EthernetCardPF):
         """
         when you just want to force values without parsing. type defaults to a VF
@@ -91,3 +91,5 @@ class EthernetCardPort(EthernetPort):
             self.fields['Speed'] = speed
         if connection:
             self.fields['Connection'] = connection
+        if numa:
+            self.fields['NUMA'] = numa

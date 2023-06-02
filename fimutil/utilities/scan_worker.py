@@ -12,7 +12,7 @@ import sys
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.worker_node import WorkerNode
 
-if __name__ == "__main__":
+def main():
 
     parser = argparse.ArgumentParser()
     # split into different mutually exclusive operations
@@ -57,4 +57,7 @@ if __name__ == "__main__":
                         ralph=ralph, dp_switch=None)
     worker.parse()
     print(worker)
+
+if __name__ == "__main__":
+    main()
 

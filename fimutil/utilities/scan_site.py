@@ -4,7 +4,6 @@ Scan a site given on command line printing to stdout all pertinent info
 """
 
 import argparse
-import traceback
 import logging
 import sys
 import json
@@ -18,8 +17,8 @@ from fimutil.ralph.fim_helper import site_to_fim
 from fim.slivers.delegations import DelegationType, Pools
 from fim.slivers.capacities_labels import Location, LocationException
 
-if __name__ == "__main__":
 
+def main():
     parser = argparse.ArgumentParser()
     # split into different mutually exclusive operations
 
@@ -135,3 +134,6 @@ if __name__ == "__main__":
         with open(args.json, 'w') as f:
             json.dump(site.to_json(), f, indent=2, sort_keys=True)
 
+
+if __name__ == "__main__":
+    main()

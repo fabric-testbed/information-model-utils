@@ -9,8 +9,8 @@ import sys
 
 from fimutil.netam.arm import NetworkARM
 
-if __name__ == "__main__":
 
+def main():
     parser = argparse.ArgumentParser()
     # split into different mutually exclusive operations
 
@@ -51,3 +51,5 @@ if __name__ == "__main__":
     logging.info('Saving completed')
 
 
+if __name__ == "__main__":
+    main()

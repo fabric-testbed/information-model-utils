@@ -14,7 +14,7 @@ dynamic = ["version", "description"]
 requires-python = '>=3.9'
 dependencies = [
 	"fabric_fim >= 1.5.0",
-    "pyjq == 2.5.1",
+    "pyjq == 2.6.0",
 	]
 
 [project.scripts]

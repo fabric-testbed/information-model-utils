@@ -15,6 +15,7 @@ requires-python = '>=3.9'
 dependencies = [
 	"fabric_fim >= 1.5.0",
     "pyjq == 2.6.0",
+	"jsonpath_ng == 1.5.3",
 	]
 
 [project.scripts]

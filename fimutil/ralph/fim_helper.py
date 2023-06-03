@@ -360,7 +360,7 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
             for pf_parent in v:
                 child_vfs = org.get_vfs_of_parent(pf_parent.fields['BDF'])
                 macs, bdfs, vlans, numas = __convert_vf_list_to_interface_labels(child_vfs)
-                labs.append(Labels(mac=macs, vlan=vlans))
+                labs.append(Labels(mac=macs, vlan=vlans, bdf=bdfs))
                 child_bdfs.extend(bdfs)
                 child_numas.extend(numas)
                 units += len(child_vfs)

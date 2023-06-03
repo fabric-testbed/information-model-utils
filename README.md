@@ -170,7 +170,7 @@ $ generate_instance_flavors.py -o JSONA -f flavors.json
 
 You can use a virtualenv or install directly:
 ```
-$ pip install fim-utils
+$ pip install fimutil
 ```
 
 ### For development
@@ -186,10 +186,10 @@ $ python scan_worker.py <options>
 Note that to install PyJQ dependency as part of requirements you need to have `automake` installed on your system. So
 `yum install automake` or `brew install automake` or similar. 
 
-### Building and packaging
+### Building and packaging 
 
-Use 
+Use (make sure to `pip install flit` first):
 ```
-$ python -m build
-$ twine upload dist/*
+$ flit build
+$ flit publish
 ```

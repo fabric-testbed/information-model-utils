@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "fim-utils"
-authors = [{name = "Ilya Baldin", email = "ibaldin@renci.org"}, {name = "Xi Yang", email="xiyang@es.net"}]
+authors = [{name = "Ilya Baldin", email = "ibaldin@renci.org"}, {name = "Xi Yang", email="xiyang@es.net"}, {name="Hussamuddin Nasir", email="nasir@netlab.uky.edu"}]
 readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License",

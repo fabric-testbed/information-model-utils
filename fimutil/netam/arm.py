@@ -86,7 +86,7 @@ class NetworkARM:
                                            capacities=f.Capacities(unit=1))
         al2s_l2_ns = al2s_node.add_network_service(name=al2s_node.name + '-ns', layer=f.Layer.L2,  stitch_node=True,
                                                    node_id=al2s_node.node_id + '-ns', nstype=f.ServiceType.MPLS)
-
+        regexVlanPort = re.compile(r'\/\d+/\d+\/\d+\.\d+$')
         # add site nodes
         for node in nodes:
             # add switch node
@@ -165,6 +165,15 @@ class NetworkARM:
                     port_caps = f.Capacities(bw=speed_gbps)
                     # add labels (vlan ??)
                     port_labs = f.Labels(local_name=port_name, mac=port_mac)
+                    if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
+                        for ipv6_addr in port['ietf-ip:ipv6']['address']:
+                            ipv6_addr_ip = ipv6_addr['ip']
+                            ipv6_addr_prefix_len = ipv6_addr['prefix-length']
+                            port_labs = f.Labels().update(port_labs, local_name=port_name, ipv6=ipv6_addr_ip)
+                            # only take the first
+                            break
+                    elif regexVlanPort.search(port_name):  # skip if no ipv6 address (it's a slice vlan port)
+                        continue
                     if 'ietf-ip:ipv4' in port and 'address' in port['ietf-ip:ipv4']:
                         for ipv4_addr in port['ietf-ip:ipv4']['address']:
                             ipv4_addr_ip = ipv4_addr['ip']
@@ -174,13 +183,8 @@ class NetworkARM:
                                 "ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
                             # only take the first
                             break
-                    if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
-                        for ipv6_addr in port['ietf-ip:ipv6']['address']:
-                            ipv6_addr_ip = ipv6_addr['ip']
-                            ipv6_addr_prefix_len = ipv6_addr['prefix-length']
-                            port_labs = f.Labels().update(port_labs, local_name=port_name, ipv6=ipv6_addr_ip)
-                            # only take the first
-                            break
+                    elif regexVlanPort.search(port_name):  # skip if no ipv4 address (it's a slice vlan port)
+                        continue
                     sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
                                              node_id=port_nid, labels=port_labs,
                                              capacities=port_caps)

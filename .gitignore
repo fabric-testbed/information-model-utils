@@ -7,6 +7,15 @@ __pycache__/
 # C extensions
 *.so
 
+# GraphML
+**.graphml
+
+.scan-config.json
+token
+flavors*.json
+flavors.csv
+fimutil/utilities/*.json
+
 # Distribution / packaging
 .Python
 build/

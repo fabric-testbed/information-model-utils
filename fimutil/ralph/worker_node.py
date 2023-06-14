@@ -138,7 +138,7 @@ class WorkerNode(RalphAsset):
             port = EthernetCardPort(uri='no-url', ralph=self.ralph)
             port.force_values(model='OpenStack-vNIC', desc='OpenStack parent NIC', speed='1Gbps',
                               bdf='0000:00:00.0', mac=self.generate_openstack_mac(mac_offset, self.fields['Name'], 1),
-                              peer_port=str(self.OPENSTACK_NIC_INDEX))
+                              peer_port=str(self.OPENSTACK_NIC_INDEX), numa='-1')
             self.components['port-' + str(port_index)] = port
             port_index += 1
             if not self.dp_switch.vlan_ranges:
@@ -155,7 +155,7 @@ class WorkerNode(RalphAsset):
                                   bdf='0000:00:00.0', vbdf='0000:' + vbdf_diff + '.0',
                                   ctype=RalphAssetType.EthernetCardVF,
                                   mac=self.generate_openstack_mac(mac_offset, self.fields['Name'], vnic_idx),
-                                  peer_port=str(self.OPENSTACK_NIC_INDEX))
+                                  peer_port=str(self.OPENSTACK_NIC_INDEX), numa='-1')
                 self.components['port-' + str(port_index)] = port
                 port_index += 1
             type(self).OPENSTACK_NIC_INDEX += 1

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Scan the OESS API to create an ARM for AL2S
+Scan the network (NSO and later PCE) for connectivity information and produce a model of the network
 """
 
 import argparse
 import logging
 import sys
 
-from fimutil.al2s.arm import OessARM
+from fimutil.netam.arm import NetworkARM
 
-if __name__ == "__main__":
 
+def main():
     parser = argparse.ArgumentParser()
     # split into different mutually exclusive operations
 
@@ -20,6 +20,9 @@ if __name__ == "__main__":
                         help="Turn on debugging")
     parser.add_argument("-m", "--model", action="store",
                         help="Produce an ARM model of a site and save into indicated file")
+
+    parser.add_argument("--isis-link-validation", action="store_true",
+                        help="Only include validated links in the IS-IS topology")
 
     args = parser.parse_args()
 
@@ -32,9 +35,11 @@ if __name__ == "__main__":
         print('You must specify the name of the file to save the model into', file=sys.stderr)
         sys.exit(-1)
 
-    arm = OessARM(config_file=args.config)
+    arm = NetworkARM(config_file=args.config, isis_link_validation=args.isis_link_validation)
 
-    logging.info('Querying OESS')
+    logging.info('Querying NSO')
+    if args.isis_link_validation:
+        logging.info('Querying SR-PCE for IS-IS link validation')
     arm.build_topology()
 
     logging.info('Generating delegations')
@@ -46,3 +51,5 @@ if __name__ == "__main__":
     logging.info('Saving completed')
 
 
+if __name__ == "__main__":
+    main()

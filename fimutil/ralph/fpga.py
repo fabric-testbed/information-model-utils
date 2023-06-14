@@ -40,6 +40,7 @@ class FPGA:
                 try:
                     ports = []
                     if fpga_model in custom_fields[field]:
+                        logging.debug(f'Detected FPGA {fpga_model}')
                         model = fpga_model
                         description = custom_fields[field]
                         bdf = custom_fields[field + '_pci_id']

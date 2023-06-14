@@ -228,7 +228,7 @@ class WorkerNode(RalphAsset):
             elif not comp.__dict__.get('type'):
                 # GPU or FPGA
                 d = comp.__dict__.copy()
-                d['Type'] = str(RalphAssetType.GPU)
+                d['Type'] = str(RalphAssetType.GPU) if isinstance(comp, GPU) else str(RalphAssetType.FPGA)
                 comps.append(d)
         ret['Components'] = comps
         return ret

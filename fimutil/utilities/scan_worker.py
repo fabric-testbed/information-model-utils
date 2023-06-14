@@ -34,6 +34,8 @@ def main():
         logging.basicConfig(level=logging.INFO)
     elif args.debug >= 1:
         logging.basicConfig(level=logging.DEBUG)
+        # silence urllib
+        logging.getLogger('urllib3.connectionpool').setLevel(level=logging.INFO)
 
     if args.worker is None:
         print('You must specify the worker', file=sys.stderr)

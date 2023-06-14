@@ -2,6 +2,7 @@ from typing import List, Any
 from dataclasses import dataclass
 
 import pyjq
+import logging
 
 GPU_MODELS = ['Quadro RTX 6000/8000', 'Tesla T4', 'A40', 'A30 PCIe']
 
@@ -29,6 +30,7 @@ class GPU:
         for field in custom_fields:
             for gpu_model in GPU_MODELS:
                 if gpu_model in custom_fields[field]:
+                    logging.debug(f'Detected GPU {gpu_model}')
                     model = gpu_model
                     description = custom_fields[field]
                     bdf = custom_fields[field + '_pci_id']

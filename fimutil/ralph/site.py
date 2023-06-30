@@ -67,15 +67,24 @@ class Site:
         query = {'hostname': f'{self.name.lower()}-time' + self.domain}
         results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
                                              urlencode(query))
-        ptp_url = None
-        try:
-            ptp_url = pyjq.one('[ .results[0].url ]', results)[0]
-            logging.info(f'Identified PTP server {ptp_url=}')
-            if not ptp_url:
-                raise ValueError
-            self.ptp = True
-        except ValueError:
-            logging.warning('Unable to find PTP server in site, continuing')
+
+        if self.config and self.config.get(self.name) and self.config.get(self.name).get('ptp'):
+            ptp_override = self.config.get(self.name).get('ptp')
+            if not isinstance(ptp_override, bool):
+                logging.error(f'Config file does not specify ptp override as a boolean for site {self.name}')
+                raise RuntimeError('Unable to continue')
+            logging.info(f'Overriding {self.name} PTP setting with {ptp_override} from static configuration file')
+            self.ptp = ptp_override
+        else:
+            ptp_url = None
+            try:
+                ptp_url = pyjq.one('[ .results[0].url ]', results)[0]
+                logging.info(f'Identified PTP server {ptp_url=}')
+                if not ptp_url:
+                    raise ValueError
+                self.ptp = True
+            except ValueError:
+                logging.warning('Unable to find PTP server in site, continuing')
 
         query = {'hostname__regex': f'{self.name.lower()}-w[1234567890]+' + self.domain}
         results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +

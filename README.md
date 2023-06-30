@@ -98,6 +98,7 @@ The general format example of the file is as follows (SITE1, SITE2 are all-caps 
       "URL": <URL of SITE2's dp switch in Ralph>,
       "Site": "SITE2"
     },
+    "ptp": true,
     "storage": {
       "Disk": "500TB"
     },

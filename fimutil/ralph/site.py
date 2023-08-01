@@ -137,6 +137,12 @@ class Site:
         dp_ports = list()
         for w in self.workers:
             dp_ports.extend(w.get_dp_ports())
+        # see if any extra ports are mentioned in the config file
+        if self.config and self.config.get(self.name) and self.config.get(self.name).get('connected_ports'):
+            dp_ports.extend(self.config.get(self.name).get('connected_ports'))
+        # uniquify and sort
+        dp_ports = list(set(dp_ports))
+        dp_ports.sort()
         ret["DataPlane"]["Connected_ports"] = dp_ports
         n = list()
         for w in self.workers:

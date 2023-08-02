@@ -46,7 +46,7 @@ def main():
                         help="This is a lightweight site supporting only OpenStack virtual NICs")
     parser.add_argument("-c", "--config", action="store", default=".scan-config.json",
                         help="JSON-formatted additional configuration file, "
-                             "including e.g. odd site-dataplane switch mapping")
+                             "including e.g. odd site-dataplane switch mapping. Defaults to .scan-config.json")
 
     args = parser.parse_args()
 

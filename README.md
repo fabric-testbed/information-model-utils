@@ -111,11 +111,15 @@ The general format example of the file is as follows (SITE1, SITE2 are all-caps 
       }
     },
     "mac_offset": "f2:ab"
+    "connected_ports": [ "HundredGigE0/0/0/15" ]
   }
 }
 ```
 `mac_offset` intended to be used with OpenStack sites to aid unique MAC generation for vNICs. Note
 that the first octet of mac_offset must be [even](https://github.com/openstack/neutron-lib/blob/cf494c8be10b36daf238fa12cf7c615656e6640d/neutron_lib/api/validators/__init__.py#L40).
+
+`connected_ports` are only effective for generating JSON files (do not affect ARMs) which are then used to put other ports
+(not include uplinks and facility ports) into admin DOWN state.
 
 ### scan_net.py
 

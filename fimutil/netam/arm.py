@@ -48,7 +48,7 @@ class NetworkARM:
                         if iface['name'] == isis_iface['name']:
                             is_isis_iface = True
                     # only keep interfaces in up status and of "*GigE0/1/2*" pattern
-                    if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d', iface['name']):
+                    if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d|Bundle-Ether\d+', iface['name']):
                         iface.pop('statistics', None)  # remove 'statistics' attributes
                         if is_isis_iface:
                             iface['isis'] = True  # mark ISIS interface
@@ -63,6 +63,7 @@ class NetworkARM:
             if 'p2p_links' in site_info:
                 if ' ' not in port_name:
                     port_name = port_name.replace("GigE", "GigE ")
+                    port_name = port_name.replace("Bundle-Ether", "Bundle-Ether ")
                 if port_name in site_info['p2p_links']:
                     port_info = site_info['p2p_links'][port_name]
                     if 'ltype' in port_info:
@@ -86,7 +87,7 @@ class NetworkARM:
                                            capacities=f.Capacities(unit=1))
         al2s_l2_ns = al2s_node.add_network_service(name=al2s_node.name + '-ns', layer=f.Layer.L2,  stitch_node=True,
                                                    node_id=al2s_node.node_id + '-ns', nstype=f.ServiceType.MPLS)
-        regexVlanPort = re.compile(r'\/\d+/\d+\/\d+\.\d+$')
+        regexVlanPort = re.compile(r'\/\d+/\d+\/\d+\.\d+$') # ignore BE (like Bundle-Ether101.3000) for site ports
         # add site nodes
         for node in nodes:
             # add switch node

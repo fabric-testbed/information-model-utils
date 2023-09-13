@@ -13,7 +13,7 @@ class NVMeDrive(RalphAsset):
     # or
     # "Description": "Dell DC NVMe PE8010 RI U.2 960GB in PCIe SSD Slot 22 in Bay 2 (0000:21:00.0) on NUMA Node 0"
     REGEX_FIELDS = {'BDF': ["Description", ".+\\(([0-9a-f:.]+)\\).*"],
-                    'Model': ["Description", ".+(P4510|CD5|CD6|PE8010) ([\\w]+).*"],
+                    'Model': ["Description", ".+(P4510|CD5|CD6|PE8010|PM9A3) ([\\w]+).*"],
                     'Disk': ["Description", ".+ ([\\d]+[MGTP]B|[\\d]+[MGTP]) .*"],
                     'NUMA': ["Description", ".+ NUMA Node ([\\+\\-\\d]+).*"]}
 
@@ -31,7 +31,8 @@ class NVMeDrive(RalphAsset):
             raise RalphAssetMimatch('This is not an NVMe drive')
         if self.fields['Model'] == 'CD5' or \
                 self.fields['Model'] == 'CD6' or \
-                self.fields['Model'] == 'PE8010':
+                self.fields['Model'] == 'PE8010' or \
+                self.fields['Model'] == 'PM9A3':
             # FIXME: temporary override to old model
             self.fields['Model'] = "P4510"
 

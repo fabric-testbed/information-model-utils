@@ -17,7 +17,7 @@ class NetworkARM:
     Generate Network AM resources information model.
     """
 
-    def __init__(self, *, config_file=None, isis_link_validation=False):
+    def __init__(self, *, config_file=None, isis_link_validation=False, skip_device=None):
         self.topology = None
         self.config = self.get_config(config_file)
         self.nso = NsoClient(config=self.config)
@@ -25,6 +25,10 @@ class NetworkARM:
             self.sr_pce = SrPceClient(config=self.config)
         else:
             self.sr_pce = None
+        if skip_device is not None:
+            self.skipped_devices = skip_device.split(',')
+        else:
+            self.skipped_devices = []
         self.valid_ipv4_links = None
         self.sites_metadata = None
         if 'sites_config' in self.config:
@@ -38,9 +42,13 @@ class NetworkARM:
         devs = self.nso.devices()
         for dev in devs:
             dev_name = dev['name']
+            if dev_name in self.skipped_devices:
+                continue
             ifaces = self.nso.interfaces(dev_name)
             isis_ifaces = self.nso.isis_interfaces(dev_name)
             if ifaces:
+                if isis_ifaces is None:
+                    raise NetAmArmError(f"Device '{dev_name}' has no active isis interface")
                 for iface in list(ifaces):
                     # skip if not an isis l2 p2p interfaces
                     is_isis_iface = False

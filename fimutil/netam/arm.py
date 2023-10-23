@@ -52,7 +52,7 @@ class NetworkARM:
             isis_ifaces = self.nso.isis_interfaces(dev_name)
             if ifaces:
                 if isis_ifaces is None:
-                    raise NetAmArmError(f"Device '{dev_name}' has no active isis interface")
+                    raise NetAmArmError(f"Device '{dev_name}' has no active isis interface - fix that or consider '--skip-device device-name'")
                 for iface in list(ifaces):
                     # skip if not an isis l2 p2p interfaces
                     is_isis_iface = False
@@ -111,6 +111,8 @@ class NetworkARM:
         regexVlanPort = re.compile(r'\/\d+/\d+\/\d+\.\d+$') # ignore BE (like Bundle-Ether101.3000) for site ports
         # add site nodes
         for node in nodes:
+            if 'interfaces' not in node:
+                continue
             # add switch node
             node_name = node['name']
             # TODO: get model name from NSO

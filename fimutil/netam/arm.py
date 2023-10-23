@@ -42,6 +42,10 @@ class NetworkARM:
         devs = self.nso.devices()
         for dev in devs:
             dev_name = dev['name']
+            # skip the devices that has no p2p links configured
+            if not self._has_p2p_links(dev_name):
+                continue
+            # skip the devices that explicitly asked to skip
             if dev_name in self.skipped_devices:
                 continue
             ifaces = self.nso.interfaces(dev_name)
@@ -64,6 +68,15 @@ class NetworkARM:
                     ifaces.remove(iface)
                 dev['interfaces'] = ifaces
         return devs
+
+    def _has_p2p_links(self, dev_name) -> bool:
+        re_site = re.findall(r'(\w+)-.+', dev_name)
+        site_name = str.upper(re_site[0])
+        if self.sites_metadata and site_name in self.sites_metadata:
+            site_info = self.sites_metadata[site_name]
+            if 'p2p_links' in site_info:
+                return bool(site_info['p2p_links'])
+        return False
 
     def _get_link_type(self, site_name, port_name) -> str:
         if self.sites_metadata and site_name in self.sites_metadata:

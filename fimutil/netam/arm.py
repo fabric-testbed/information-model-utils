@@ -17,7 +17,7 @@ class NetworkARM:
     Generate Network AM resources information model.
     """
 
-    def __init__(self, *, config_file=None, isis_link_validation=False):
+    def __init__(self, *, config_file=None, isis_link_validation=False, skip_device=None):
         self.topology = None
         self.config = self.get_config(config_file)
         self.nso = NsoClient(config=self.config)
@@ -25,6 +25,10 @@ class NetworkARM:
             self.sr_pce = SrPceClient(config=self.config)
         else:
             self.sr_pce = None
+        if skip_device is not None:
+            self.skipped_devices = skip_device.split(',')
+        else:
+            self.skipped_devices = []
         self.valid_ipv4_links = None
         self.sites_metadata = None
         if 'sites_config' in self.config:
@@ -38,9 +42,17 @@ class NetworkARM:
         devs = self.nso.devices()
         for dev in devs:
             dev_name = dev['name']
+            # skip the devices that has no p2p links configured
+            if not self._has_p2p_links(dev_name):
+                continue
+            # skip the devices that explicitly asked to skip
+            if dev_name in self.skipped_devices:
+                continue
             ifaces = self.nso.interfaces(dev_name)
             isis_ifaces = self.nso.isis_interfaces(dev_name)
             if ifaces:
+                if isis_ifaces is None:
+                    raise NetAmArmError(f"Device '{dev_name}' has no active isis interface - fix that or consider '--skip-device device-name'")
                 for iface in list(ifaces):
                     # skip if not an isis l2 p2p interfaces
                     is_isis_iface = False
@@ -56,6 +68,15 @@ class NetworkARM:
                     ifaces.remove(iface)
                 dev['interfaces'] = ifaces
         return devs
+
+    def _has_p2p_links(self, dev_name) -> bool:
+        re_site = re.findall(r'(\w+)-.+', dev_name)
+        site_name = str.upper(re_site[0])
+        if self.sites_metadata and site_name in self.sites_metadata:
+            site_info = self.sites_metadata[site_name]
+            if 'p2p_links' in site_info:
+                return bool(site_info['p2p_links'])
+        return False
 
     def _get_link_type(self, site_name, port_name) -> str:
         if self.sites_metadata and site_name in self.sites_metadata:
@@ -90,6 +111,8 @@ class NetworkARM:
         regexVlanPort = re.compile(r'\/\d+/\d+\/\d+\.\d+$') # ignore BE (like Bundle-Ether101.3000) for site ports
         # add site nodes
         for node in nodes:
+            if 'interfaces' not in node:
+                continue
             # add switch node
             node_name = node['name']
             # TODO: get model name from NSO

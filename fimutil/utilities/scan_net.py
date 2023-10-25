@@ -20,9 +20,10 @@ def main():
                         help="Turn on debugging")
     parser.add_argument("-m", "--model", action="store",
                         help="Produce an ARM model of a site and save into indicated file")
-
     parser.add_argument("--isis-link-validation", action="store_true",
                         help="Only include validated links in the IS-IS topology")
+    parser.add_argument("--skip-device", action="store",
+                        help="Skip the devices listed (comma separated)")
 
     args = parser.parse_args()
 
@@ -35,7 +36,7 @@ def main():
         print('You must specify the name of the file to save the model into', file=sys.stderr)
         sys.exit(-1)
 
-    arm = NetworkARM(config_file=args.config, isis_link_validation=args.isis_link_validation)
+    arm = NetworkARM(config_file=args.config, isis_link_validation=args.isis_link_validation, skip_device=args.skip_device)
 
     logging.info('Querying NSO')
     if args.isis_link_validation:

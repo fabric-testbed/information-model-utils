@@ -350,45 +350,55 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
 
         logging.debug('Adding shared SR-IOV cards')
         # create VF components
-        for k, v in org.get_shared_cards().items():
-            logging.debug(f'Processing {v}')
-            parent_macs, parent_bdfs, parent_peers, parent_numas = __convert_pf_list_to_interface_data(v)
-            units = 0
-            labs = list()
-            child_bdfs = list()
-            child_numas = list()
-            for pf_parent in v:
-                child_vfs = org.get_vfs_of_parent(pf_parent.fields['BDF'])
-                macs, bdfs, vlans, numas = __convert_vf_list_to_interface_labels(child_vfs)
-                labs.append(Labels(mac=macs, vlan=vlans, bdf=bdfs))
-                child_bdfs.extend(bdfs)
-                child_numas.extend(numas)
-                units += len(child_vfs)
-            slot = v[0].fields['Slot']
-            model = v[0].fields['Model']
-            descr = v[0].fields['Description']
-            interface_node_ids = list(map(mac_to_node_id, parent_macs))
-            shnic = w.add_component(name=w.name + '-slot' + slot,
-                                    node_id=w.node_id + '-slot' + slot,
-                                    model=model,
-                                    network_service_node_id=w.node_id + '-slot' + slot + '-ns',
-                                    # these are lists with element for every PF
-                                    interface_node_ids=interface_node_ids,
-                                    interface_labels=labs,
-                                    capacities=Capacities(unit=units),
-                                    labels=Labels(bdf=child_bdfs, numa=child_numas),
-                                    ctype=ComponentType.SharedNIC,
-                                    details=descr
-                                    )
-            # need to match interfaces of the component
-            for intf in shnic.interface_list:
-                # becase ports/interfaces on shared cards don't carry parent MAC
-                # we have to trace it back from (any) child MAC to parent MAC
-                intf_lab = intf.get_property('labels')
-                intf_bdfs = intf_lab.bdf
-                parent = org.get_parent_of_vf(intf_bdfs[0])
-                parent_mac = parent.fields['MAC']
-                port_map[parent_peers[parent_macs.index(parent_mac)]] = intf
+        for k, v_temp in org.get_shared_cards().items():
+            logging.debug(f'Processing {k} with {v_temp}')
+            # some shared NICs have one port connected, but some have two - need to be treated
+            # separately - each as a individual single port shared NIC
+            name_idx = 0
+            for v in v_temp:
+                v = [v]  # list is expected
+                parent_macs, parent_bdfs, parent_peers, parent_numas = __convert_pf_list_to_interface_data(v)
+                units = 0
+                labs = list()
+                child_bdfs = list()
+                child_numas = list()
+                for pf_parent in v:
+                    child_vfs = org.get_vfs_of_parent(pf_parent.fields['BDF'])
+                    macs, bdfs, vlans, numas = __convert_vf_list_to_interface_labels(child_vfs)
+                    labs.append(Labels(mac=macs, vlan=vlans, bdf=bdfs))
+                    child_bdfs.extend(bdfs)
+                    child_numas.extend(numas)
+                    units += len(child_vfs)
+                slot = v[0].fields['Slot']
+                model = v[0].fields['Model']
+                descr = v[0].fields['Description']
+                interface_node_ids = list(map(mac_to_node_id, parent_macs))
+                # to maintain backwards compatibility with models created before, we do the
+                # ('' if name_idx == 0 else 'f' + str(name_idx)) - now that we added name_idx
+                # so that without it, the names look as before
+                shnic = w.add_component(name=w.name + '-slot' + slot + ('' if name_idx == 0 else '-f' + str(name_idx)),
+                                        node_id=w.node_id + '-slot' + slot + ('' if name_idx == 0 else '-f' + str(name_idx)),
+                                        model=model,
+                                        network_service_node_id=w.node_id + '-slot' + slot + '-ns' +
+                                                                ('' if name_idx == 0 else '-f' + str(name_idx)),
+                                        # these are lists with element for every PF
+                                        interface_node_ids=interface_node_ids,
+                                        interface_labels=labs,
+                                        capacities=Capacities(unit=units),
+                                        labels=Labels(bdf=child_bdfs, numa=child_numas),
+                                        ctype=ComponentType.SharedNIC,
+                                        details=descr
+                                        )
+                # need to match interfaces of the component
+                for intf in shnic.interface_list:
+                    # becase ports/interfaces on shared cards don't carry parent MAC
+                    # we have to trace it back from (any) child MAC to parent MAC
+                    intf_lab = intf.get_property('labels')
+                    intf_bdfs = intf_lab.bdf
+                    parent = org.get_parent_of_vf(intf_bdfs[0])
+                    parent_mac = parent.fields['MAC']
+                    port_map[parent_peers[parent_macs.index(parent_mac)]] = intf
+                name_idx += 1
 
         # create PF components
         logging.debug('Adding physical cards')

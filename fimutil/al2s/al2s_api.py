@@ -28,6 +28,8 @@ class Al2sClient:
     ENDPOINT_VIRTUALNETWORKS_INTERFACES = "/v1/virtualnetworks/interfaces"
     
     ACCEPTED_STATUS_CODES = [200, range(300, 399)]
+    
+    MAX_RETRIES = 3
 
     def __init__(self, *, config=None, config_file=None):
         if not config:
@@ -36,6 +38,8 @@ class Al2sClient:
             self.config = config
         self.api_base_url = self.config['api_base_url']
         self.api_access_key = self.config['api_access_key']
+        self._auth = self.bearer_token
+        self._retries = 0
 
 
     def _get_config(self, config_file):
@@ -76,9 +80,9 @@ class Al2sClient:
         url = f"{self.api_base_url}{self.ENDPOINT_SESSIONS_ACCESS}"
         try:
             access_response = requests.post(url, headers=hdr, verify=False)
-            # if not access_response.text:
-            #     raise Al2sAmVNError(f'POST {url}: Empty response')
-            # return access_response.json()
+            access_response.raise_for_status()
+        except HTTPError as http_err:
+            raise Al2sAmVNError(f"POST: {url}: {http_err}")
         except Exception as e:
             raise Al2sAmVNError(f"POST: {url}: {e}")
         
@@ -91,9 +95,9 @@ class Al2sClient:
         url = f"{self.api_base_url}/v1/sessions/refresh"
         try:
             refresh_response = requests.get(url, headers=hdr, verify=False)
-            # if not refresh_response.text:
-            #     raise Al2sAmVNError(f'GET {url}: Empty response')
-            # return refresh_response.json()
+            access_response.raise_for_status()
+        except HTTPError as http_err:
+            raise Al2sAmVNError(f"POST: {url}: {http_err}")
         except Exception as e:
             raise Al2sAmVNError(f"GET: {url}: {e}")
         
@@ -118,20 +122,24 @@ class Al2sClient:
         --------
         The list of cloudconnects
         """
-        
-        auth = self.bearer_token
-        
+                
         # Establish API session using token-based access
         hdr = {"Accept": "application/json",
                "x-api-key": f"{self.api_access_key}",
                "content_type": "application/json",
-               "Authorization": f"{auth}"}
+               "Authorization": f"{self._auth}"}
         url = f"{self.api_base_url}{self.ENDPOINT_FOOTPRINT_CLOUDCONNECT}"
         try:
             list_response = requests.get(url, headers=hdr, verify=False)
-            # if not list_response.text:
-            #     raise Al2sAmVNError(f'GET {url}: Empty response')
-            # return list_response.json()
+            list_response.raise_for_status()
+        except HTTPError as http_err:
+            if list_response.status_code == 403:
+                if self._retries > self.MAX_RETRIES:
+                    self._retries = 0
+                    raise Al2sAmVNError(f"GET: {url}: {http_err}")
+                self._auth = self.bearer_token
+                self._retries += 1
+                return self._list_cloudconnect()
         except Exception as e:
             raise Al2sAmVNError(f"GET: {url}: {e}")
         
@@ -152,20 +160,24 @@ class Al2sClient:
         --------
         The list of myinterfaces
         """
-        
-        auth = self.bearer_token
-        
+                
         # Establish API session using token-based access
         hdr = {"Accept": "application/json",
                "x-api-key": f"{self.api_access_key}",
                "content_type": "application/json",
-               "Authorization": f"{auth}"}
+               "Authorization": f"{self._auth}"}
         url = f"{self.api_base_url}{self.ENDPOINT_FOOTPRINT_MYINTERFACES}"
         try:
             list_response = requests.get(url, headers=hdr, verify=False)
-            # if not list_response.text:
-            #     raise Al2sAmVNError(f'GET {url}: Empty response')
-            # return list_response.json()
+            list_response.raise_for_status()
+        except HTTPError as http_err:
+            if list_response.status_code == 403:
+                if self._retries > self.MAX_RETRIES:
+                    self._retries = 0
+                    raise Al2sAmVNError(f"GET: {url}: {http_err}")
+                self._auth = self.bearer_token
+                self._retries += 1
+                return self._list_myinterfaces()
         except Exception as e:
             raise Al2sAmVNError(f"GET: {url}: {e}")
         
@@ -188,22 +200,29 @@ class Al2sClient:
         The availability of the given interface
         """
         
-        auth = self.bearer_token
-        
         # Establish API session using token-based access
         hdr = {"Accept": "application/json",
                "x-api-key": f"{self.api_access_key}",
                "content_type": "application/json",
-               "Authorization": f"{auth}"}
+               "Authorization": f"{self._auth}"}
         url = f"{self.api_base_url}{self.ENDPOINT_VIRTUALNETWORKS_INTERFACES}/{interface_id}/availability"
         try:
             retrieve_response = requests.get(url, headers=hdr, verify=False)
-            # if not retrieve_response.text:
-            #     raise Al2sAmVNError(f'GET {url}: Empty response')
-            # return retrieve_response.json()
+            retrieve_response.raise_for_status()
+        except HTTPError as http_err:
+            if retrieve_response.status_code == 403:
+                if self._retries > self.MAX_RETRIES:
+                    self._retries = 0
+                    raise Al2sAmVNError(f"GET: {url}: {http_err}")
+                self._auth = self.bearer_token
+                self._retries += 1
+                return self._retrieve_interface_availability(interface_id)
+            else:
+                raise Al2sAmVNError(f"Get failed: {url}: {http_err}")
         except Exception as e:
             raise Al2sAmVNError(f"GET: {url}: {e}")
         
+        self._retries = 0
         return retrieve_response.json()
     
     def _get_available_vlans(self, interface, interface_availability) -> list:

@@ -10,11 +10,12 @@ from fim.user.component import Component, ComponentType
 from fim.user.link import LinkType
 from fim.user.network_service import ServiceType
 from fim.slivers.identifiers import *
-from fim.slivers.capacities_labels import Capacities, Labels, Location
+from fim.slivers.capacities_labels import Capacities, Labels, Location, Flags
 
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.site import Site
 from fimutil.ralph.gpu import GPU
+from fimutil.ralph.fpga import FPGA
 from fimutil.ralph.ethernetport import EthernetCardPort, EthernetPort
 from fimutil.ralph.nvme import NVMeDrive
 from fimutil.ralph.asset import RalphAssetType, RalphAsset
@@ -184,8 +185,35 @@ def __add_gpu(node: Node, gpu_name: str, gpu: GPU) -> None:
                        node_id=node.node_id + '-' + gpu_name,
                        ctype=ComponentType.GPU,
                        capacities=Capacities(unit=1),
-                       labels=Labels(bdf=gpu.BDF),
+                       labels=Labels(bdf=gpu.BDF, numa=gpu.NUMA),
                        details=gpu.Description)
+
+
+def __add_fpga(node: Node, fpga_name: str, fpga: FPGA, port_map: Dict[str, str]) -> None:
+    """
+    Add FPGA to a node
+    """
+    interface_node_ids = list()
+    interface_labels = list()
+    fpga_node_id = f'fpga-{fpga.SN}'
+    port_id = 1
+    for p in fpga.Ports:
+        interface_node_ids.append(f'{fpga_node_id}-p{port_id}')
+        interface_labels.append(Labels(vlan_range='1-4096'))
+        port_id += 1
+    c = node.add_component(name=node.name + '-' + fpga_name,
+                           model=fpga.Model,
+                           node_id=fpga_node_id,
+                           ctype=ComponentType.FPGA,
+                           capacities=Capacities(unit=1),
+                           labels=Labels(bdf=fpga.BDF, usb_id=fpga.USB_ID, numa=fpga.NUMA),
+                           interface_node_ids=interface_node_ids,
+                           interface_labels=interface_labels,
+                           details=fpga.Description)
+    for intf in c.interface_list:
+        # use local name index (p1, p2 etc) to index into the Ports array
+        port_index = int(intf.labels.local_name[1:])
+        port_map[fpga.Ports[port_index - 1]] = intf
 
 
 def __add_nvme(node: Node, nvme_name: str, nvme: NVMeDrive) -> None:
@@ -202,7 +230,7 @@ def __add_nvme(node: Node, nvme_name: str, nvme: NVMeDrive) -> None:
                        node_id=nvme.fields['SN'],
                        ctype=ComponentType.NVME,
                        capacities=Capacities(unit=1, disk=disk_size_int),
-                       labels=Labels(bdf=nvme.fields['BDF']),
+                       labels=Labels(bdf=nvme.fields['BDF'], numa=nvme.fields.get('NUMA', '-1')),
                        details=nvme.fields['Description'])
 
 
@@ -228,7 +256,7 @@ def __process_card_port(port: EthernetCardPort, org: CardOrganizer) -> None:
         raise RuntimeError('Unable to continue')
 
 
-def __convert_vf_list_to_interface_labels(vfs: List[EthernetCardPort]) -> Tuple[List[str], List[str], List[str]]:
+def __convert_vf_list_to_interface_labels(vfs: List[EthernetCardPort]) -> Tuple[List[str], List[str], List[str], List[str]]:
     """
     Take a list of VFs of a single parent PF and convert into a tuple of lists one for MAC, child BDF and VLAN
     (in that order)
@@ -236,27 +264,31 @@ def __convert_vf_list_to_interface_labels(vfs: List[EthernetCardPort]) -> Tuple[
     macs = list()
     bdfs = list()
     vlans = list()
+    numas = list()
     for vf in vfs:
         macs.append(vf.fields['MAC'])
         bdfs.append(vf.fields['vBDF'])
         vlans.append(vf.fields['VLAN'])
+        numas.append(vf.fields.get('NUMA', '-1'))
 
-    return macs, bdfs, vlans
+    return macs, bdfs, vlans, numas
 
 
-def __convert_pf_list_to_interface_data(pfs: List[EthernetCardPort]) -> Tuple[List[str], List[str], List[str]]:
+def __convert_pf_list_to_interface_data(pfs: List[EthernetCardPort]) -> Tuple[List[str], List[str], List[str], List[str]]:
     """
-    Take a list of PF ports of the same card and convert into tuple of two lists -
-    macs, bdfs and peer ports
+    Take a list of PF ports of the same card and convert into tuple of  lists -
+    macs, bdfs and peer ports and numa nodes
     """
     macs = list()
     bdfs = list()
     peers = list()
+    numas = list()
     slot = None
     for pf in pfs:
         macs.append(pf.fields['MAC'])
         bdfs.append(pf.fields['BDF'])
         peers.append(pf.fields['Peer_port'])
+        numas.append(pf.fields.get('NUMA', '-1'))
         if slot is None:
             slot = pf.fields['Slot']
         else:
@@ -264,7 +296,7 @@ def __convert_pf_list_to_interface_data(pfs: List[EthernetCardPort]) -> Tuple[Li
                 logging.error(f'Slot of {pf} does not match the slot of other PFs in this card')
                 raise RuntimeError()
 
-    return macs, bdfs, peers
+    return macs, bdfs, peers, numas
 
 
 def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopology:
@@ -297,7 +329,7 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                          disk=disk_size_int)
         w = topo.add_node(name=worker.fields['Name'], model=worker.model.fields['Model'],
                           node_id=worker.fields['SN'], ntype=NodeType.Server,
-                          capacities=cap, site=site.name, location=loc)
+                          capacities=cap, site=site.name, location=loc, flags=Flags(ptp=worker.ptp))
         #
         # handle various component types
         #
@@ -311,6 +343,8 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                 __process_card_port(comp, org)
             elif isinstance(comp, GPU):
                 __add_gpu(w, comp_name, comp)
+            elif isinstance(comp, FPGA):
+                __add_fpga(w, comp_name, comp, port_map)
 
         org.organize()
 
@@ -318,15 +352,17 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
         # create VF components
         for k, v in org.get_shared_cards().items():
             logging.debug(f'Processing {v}')
-            parent_macs, parent_bdfs, parent_peers = __convert_pf_list_to_interface_data(v)
+            parent_macs, parent_bdfs, parent_peers, parent_numas = __convert_pf_list_to_interface_data(v)
             units = 0
             labs = list()
             child_bdfs = list()
+            child_numas = list()
             for pf_parent in v:
                 child_vfs = org.get_vfs_of_parent(pf_parent.fields['BDF'])
-                macs, bdfs, vlans = __convert_vf_list_to_interface_labels(child_vfs)
-                labs.append(Labels(mac=macs, bdf=bdfs, vlan=vlans))
+                macs, bdfs, vlans, numas = __convert_vf_list_to_interface_labels(child_vfs)
+                labs.append(Labels(mac=macs, vlan=vlans, bdf=bdfs))
                 child_bdfs.extend(bdfs)
+                child_numas.extend(numas)
                 units += len(child_vfs)
             slot = v[0].fields['Slot']
             model = v[0].fields['Model']
@@ -340,7 +376,7 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                                     interface_node_ids=interface_node_ids,
                                     interface_labels=labs,
                                     capacities=Capacities(unit=units),
-                                    labels=Labels(bdf=child_bdfs),
+                                    labels=Labels(bdf=child_bdfs, numa=child_numas),
                                     ctype=ComponentType.SharedNIC,
                                     details=descr
                                     )
@@ -358,7 +394,7 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
         logging.debug('Adding physical cards')
         for k, v in org.get_dedicated_cards().items():
             logging.debug(f'Processing {v}')
-            macs, bdfs, peers = __convert_pf_list_to_interface_data(v)
+            macs, bdfs, peers, numas = __convert_pf_list_to_interface_data(v)
             interface_node_ids = list(map(mac_to_node_id, macs))
             labels = list()
             for m in macs:
@@ -373,7 +409,7 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                                     interface_labels=labels,
                                     ctype=ComponentType.SmartNIC,
                                     capacities=Capacities(unit=1),
-                                    labels=Labels(bdf=bdfs),
+                                    labels=Labels(bdf=bdfs, numa=numas),
                                     details=v[0].fields['Description']
                                     )
             for intf in smnic.interface_list:

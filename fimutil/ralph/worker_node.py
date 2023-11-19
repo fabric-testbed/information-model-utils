@@ -11,6 +11,7 @@ from fimutil.ralph.asset import RalphAsset, RalphAssetType, RalphJSONError, Ralp
 from fimutil.ralph.nvme import NVMeDrive
 from fimutil.ralph.ethernetport import EthernetCardPort
 from fimutil.ralph.gpu import GPU
+from fimutil.ralph.fpga import FPGA
 from fimutil.ralph.model import WorkerModel
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.dp_switch import DPSwitch
@@ -28,12 +29,14 @@ class WorkerNode(RalphAsset):
     # first octet must be even
     OPENSTACK_NIC_MAC_REG = r'([a-fA-F0-9][aceACE02468])[:-]([a-fA-F0-9]{2})'
 
-    def __init__(self, *, uri: str, ralph: RalphURI, site: str = None, dp_switch: DPSwitch, config: Dict = None):
+    def __init__(self, *, uri: str, ralph: RalphURI, site: str = None, dp_switch: DPSwitch, config: Dict = None,
+                 ptp: bool = False):
         super().__init__(uri=uri, ralph=ralph)
         self.type = RalphAssetType.Node
         self.model = None
         self.site = site
         self.config = config
+        self.ptp = ptp # comes from site
         # so we can get VLAN info
         self.dp_switch = dp_switch
 
@@ -79,16 +82,30 @@ class WorkerNode(RalphAsset):
         self.model = WorkerModel(uri=model_url, ralph=self.ralph)
         try:
             self.model.parse()
-            # override from config if present
-            if self.config and self.config.get(self.site) and self.config.get(self.site).get('workers') and \
-                self.config.get(self.site).get('workers').get(self.fields['Name']):
-                worker_override = self.config.get(self.site).get('workers').get(self.fields['Name'])
-                self.model.fields['RAM'] = worker_override.get('RAM', self.model.fields['RAM'])
-                self.model.fields['CPU'] = worker_override.get('CPU', self.model.fields['CPU'])
-                self.model.fields['Core'] = worker_override.get('Core', self.model.fields['Core'])
-                self.model.fields['Disk'] = worker_override.get('Disk', self.model.fields['Disk'])
         except RalphAssetMimatch:
             pass
+
+        custom_fields_dict = pyjq.one('.custom_fields', self.raw_json_obj)
+
+        # check for usable_ram _disk and _cores custom fields provided from OpenStack -
+        # they override anything on the model. Note they are reported without units
+        self.model.fields['Core'] = custom_fields_dict.get('usable_cores', self.model.fields['Core'])
+        # RAM is in MB reported by OpenStack
+        ram = int(custom_fields_dict.get('usable_memory', '0'))//1024
+        if ram > 0:
+            self.model.fields['RAM'] = f'{ram}G'
+        disk = custom_fields_dict.get('usable_disk')
+        if disk:
+            self.model.fields['Disk'] = f'{disk}G'
+
+        # override from config if present
+        if self.config and self.config.get(self.site) and self.config.get(self.site).get('workers') and \
+            self.config.get(self.site).get('workers').get(self.fields['Name']):
+            worker_override = self.config.get(self.site).get('workers').get(self.fields['Name'])
+            self.model.fields['RAM'] = worker_override.get('RAM', self.model.fields['RAM'])
+            self.model.fields['CPU'] = worker_override.get('CPU', self.model.fields['CPU'])
+            self.model.fields['Core'] = worker_override.get('Core', self.model.fields['Core'])
+            self.model.fields['Disk'] = worker_override.get('Disk', self.model.fields['Disk'])
 
         # find NVMe drives in 'disks' section
         try:
@@ -121,7 +138,7 @@ class WorkerNode(RalphAsset):
             port = EthernetCardPort(uri='no-url', ralph=self.ralph)
             port.force_values(model='OpenStack-vNIC', desc='OpenStack parent NIC', speed='1Gbps',
                               bdf='0000:00:00.0', mac=self.generate_openstack_mac(mac_offset, self.fields['Name'], 1),
-                              peer_port=str(self.OPENSTACK_NIC_INDEX))
+                              peer_port=str(self.OPENSTACK_NIC_INDEX), numa='-1')
             self.components['port-' + str(port_index)] = port
             port_index += 1
             if not self.dp_switch.vlan_ranges:
@@ -138,7 +155,7 @@ class WorkerNode(RalphAsset):
                                   bdf='0000:00:00.0', vbdf='0000:' + vbdf_diff + '.0',
                                   ctype=RalphAssetType.EthernetCardVF,
                                   mac=self.generate_openstack_mac(mac_offset, self.fields['Name'], vnic_idx),
-                                  peer_port=str(self.OPENSTACK_NIC_INDEX))
+                                  peer_port=str(self.OPENSTACK_NIC_INDEX), numa='-1')
                 self.components['port-' + str(port_index)] = port
                 port_index += 1
             type(self).OPENSTACK_NIC_INDEX += 1
@@ -166,12 +183,19 @@ class WorkerNode(RalphAsset):
             self.components['gpu-' + str(gpu_index)] = gpu
             gpu_index += 1
 
+        fpgas = FPGA.find_fpgas(self.raw_json_obj)
+        fpga_index = 1
+        for fpga in fpgas:
+            self.components['fpga-' + str(fpga_index)] = fpga
+            fpga_index += 1
+
     def __str__(self):
         retl = list()
         if RalphAsset.PRINT_SUMMARY:
-            retl.append(str(self.type) + " " + self.fields['Name'])
+            retl.append(str(self.type) + " " + self.fields['Name'] + f" Flags: {{ PTP: {self.ptp} }}")
         else:
-            retl.append(str(self.type) + "[" + self.uri + "]: " + json.dumps(self.fields))
+            retl.append(str(self.type) + "[" + self.uri + "]: " + json.dumps(self.fields) +
+                        f" Flags: {{ PTP: {self.ptp} }}")
             retl.append('\t' + str(self.model))
         vfcount = 0
         for n, comp in self.components.items():
@@ -191,6 +215,8 @@ class WorkerNode(RalphAsset):
     def to_json(self):
         ret = {
                 'Name': self.fields['Name'],
+                'PTP': self.ptp,
+                'SN': self.fields.get('SN', 'Not available'),
                 'Model': self.model.fields.copy()
         }
         comps = list()
@@ -200,14 +226,23 @@ class WorkerNode(RalphAsset):
                 d['Type'] = str(comp.type)
                 comps.append(d)
             elif not comp.__dict__.get('type'):
-                # GPU
+                # GPU or FPGA
                 d = comp.__dict__.copy()
-                d['Type'] = str(RalphAssetType.GPU)
+                d['Type'] = str(RalphAssetType.GPU) if isinstance(comp, GPU) else str(RalphAssetType.FPGA)
                 comps.append(d)
         ret['Components'] = comps
         return ret
 
+    def get_dp_ports(self):
+        """
+        Return a list of names of DP switch ports this node is connected to
+        """
+        dp_ports = list()
+        for n, comp in self.components.items():
+            if comp.__dict__.get('type') and comp.type == RalphAssetType.EthernetCardPF:
+                if comp.fields.get('Peer_port'):
+                    dp_ports.append(comp.fields.get('Peer_port'))
+            if isinstance(comp, FPGA):
+                dp_ports.extend(comp.Ports)
 
-
-
-
+        return dp_ports

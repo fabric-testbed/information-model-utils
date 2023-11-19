@@ -1,0 +1,35 @@
+[build-system]
+requires = ["flit_core >=3.8"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "fim-utils"
+authors = [{name = "Ilya Baldin", email = "ibaldin@renci.org"}, {name = "Xi Yang", email="xiyang@es.net"}, {name="Hussamuddin Nasir", email="nasir@netlab.uky.edu"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License",
+		"Programming Language :: Python :: 3",
+		"Operating System :: OS Independent"]
+dynamic = ["version", "description"]
+requires-python = '>=3.9'
+dependencies = [
+	"fabric_fim >= 1.5.0",
+    "pyjq == 2.6.0",
+	"jsonpath_ng == 1.5.3",
+	]
+
+[tool.flit.module]
+name = "fimutil"
+
+[project.scripts]
+scan_site = "fimutil.utilities.scan_site:main"
+scan_worker = "fimutil.utilities.scan_worker:main"
+scan_net = "fimutil.utilities.scan_net:main"
+scan_oess = "fimutil.utilities.scan_oess:main"
+
+[project.urls]
+Home = "https://github.com/fabric-testbed/information-model-utils"
+
+[project.optional-dependencies]
+test = ["pytest", "flit"]
+

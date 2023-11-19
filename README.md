@@ -98,6 +98,7 @@ The general format example of the file is as follows (SITE1, SITE2 are all-caps 
       "URL": <URL of SITE2's dp switch in Ralph>,
       "Site": "SITE2"
     },
+    "ptp": true,
     "storage": {
       "Disk": "500TB"
     },
@@ -110,11 +111,15 @@ The general format example of the file is as follows (SITE1, SITE2 are all-caps 
       }
     },
     "mac_offset": "f2:ab"
+    "connected_ports": [ "HundredGigE0/0/0/15" ]
   }
 }
 ```
 `mac_offset` intended to be used with OpenStack sites to aid unique MAC generation for vNICs. Note
 that the first octet of mac_offset must be [even](https://github.com/openstack/neutron-lib/blob/cf494c8be10b36daf238fa12cf7c615656e6640d/neutron_lib/api/validators/__init__.py#L40).
+
+`connected_ports` are only effective for generating JSON files (do not affect ARMs) which are then used to put other ports
+(not include uplinks and facility ports) into admin DOWN state.
 
 ### scan_net.py
 
@@ -170,7 +175,7 @@ $ generate_instance_flavors.py -o JSONA -f flavors.json
 
 You can use a virtualenv or install directly:
 ```
-$ pip install fim-utils
+$ pip install fimutil
 ```
 
 ### For development
@@ -186,10 +191,10 @@ $ python scan_worker.py <options>
 Note that to install PyJQ dependency as part of requirements you need to have `automake` installed on your system. So
 `yum install automake` or `brew install automake` or similar. 
 
-### Building and packaging
+### Building and packaging 
 
-Use 
+Use (make sure to `pip install flit` first):
 ```
-$ python -m build
-$ twine upload dist/*
+$ flit build
+$ flit publish
 ```

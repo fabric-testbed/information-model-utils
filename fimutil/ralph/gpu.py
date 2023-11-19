@@ -2,8 +2,9 @@ from typing import List, Any
 from dataclasses import dataclass
 
 import pyjq
+import logging
 
-GPU_MODELS = ['Quadro RTX 6000/8000', 'Tesla T4']
+GPU_MODELS = ['Quadro RTX 6000/8000', 'Tesla T4', 'A40', 'A30 PCIe']
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,7 @@ class GPU:
     Model: str
     Description: str
     BDF: str
+    NUMA: str
 
     @staticmethod
     def find_gpus(node_raw_json) -> List[Any]:
@@ -28,8 +30,11 @@ class GPU:
         for field in custom_fields:
             for gpu_model in GPU_MODELS:
                 if gpu_model in custom_fields[field]:
+                    logging.debug(f'Detected GPU {gpu_model}')
                     model = gpu_model
                     description = custom_fields[field]
                     bdf = custom_fields[field + '_pci_id']
-                    ret.append(GPU(model, description, bdf))
+                    # -1 means unknown
+                    numa = custom_fields.get(field + '_numa_node', '-1')
+                    ret.append(GPU(model, description, bdf, numa))
         return ret

@@ -4,7 +4,6 @@ Scan a site given on command line printing to stdout all pertinent info
 """
 
 import argparse
-import traceback
 import logging
 import sys
 import json
@@ -18,8 +17,8 @@ from fimutil.ralph.fim_helper import site_to_fim
 from fim.slivers.delegations import DelegationType, Pools
 from fim.slivers.capacities_labels import Location, LocationException
 
-if __name__ == "__main__":
 
+def main():
     parser = argparse.ArgumentParser()
     # split into different mutually exclusive operations
 
@@ -47,7 +46,7 @@ if __name__ == "__main__":
                         help="This is a lightweight site supporting only OpenStack virtual NICs")
     parser.add_argument("-c", "--config", action="store", default=".scan-config.json",
                         help="JSON-formatted additional configuration file, "
-                             "including e.g. odd site-dataplane switch mapping")
+                             "including e.g. odd site-dataplane switch mapping. Defaults to .scan-config.json")
 
     args = parser.parse_args()
 
@@ -55,6 +54,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
     elif args.debug >= 1:
         logging.basicConfig(level=logging.DEBUG)
+        # silence urllib
+        logging.getLogger('urllib3.connectionpool').setLevel(level=logging.INFO)
 
     if args.site is None:
         print('You must specify the site name', file=sys.stderr)
@@ -135,3 +136,6 @@ if __name__ == "__main__":
         with open(args.json, 'w') as f:
             json.dump(site.to_json(), f, indent=2, sort_keys=True)
 
+
+if __name__ == "__main__":
+    main()

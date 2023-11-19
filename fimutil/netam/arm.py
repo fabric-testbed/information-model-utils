@@ -17,7 +17,7 @@ class NetworkARM:
     Generate Network AM resources information model.
     """
 
-    def __init__(self, *, config_file=None, isis_link_validation=False):
+    def __init__(self, *, config_file=None, isis_link_validation=False, skip_device=None):
         self.topology = None
         self.config = self.get_config(config_file)
         self.nso = NsoClient(config=self.config)
@@ -25,6 +25,10 @@ class NetworkARM:
             self.sr_pce = SrPceClient(config=self.config)
         else:
             self.sr_pce = None
+        if skip_device is not None:
+            self.skipped_devices = skip_device.split(',')
+        else:
+            self.skipped_devices = []
         self.valid_ipv4_links = None
         self.sites_metadata = None
         if 'sites_config' in self.config:
@@ -38,9 +42,17 @@ class NetworkARM:
         devs = self.nso.devices()
         for dev in devs:
             dev_name = dev['name']
+            # skip the devices that has no p2p links configured
+            if not self._has_p2p_links(dev_name):
+                continue
+            # skip the devices that explicitly asked to skip
+            if dev_name in self.skipped_devices:
+                continue
             ifaces = self.nso.interfaces(dev_name)
             isis_ifaces = self.nso.isis_interfaces(dev_name)
             if ifaces:
+                if isis_ifaces is None:
+                    raise NetAmArmError(f"Device '{dev_name}' has no active isis interface - fix that or consider '--skip-device device-name'")
                 for iface in list(ifaces):
                     # skip if not an isis l2 p2p interfaces
                     is_isis_iface = False
@@ -48,7 +60,7 @@ class NetworkARM:
                         if iface['name'] == isis_iface['name']:
                             is_isis_iface = True
                     # only keep interfaces in up status and of "*GigE0/1/2*" pattern
-                    if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d', iface['name']):
+                    if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d|Bundle-Ether\d+', iface['name']):
                         iface.pop('statistics', None)  # remove 'statistics' attributes
                         if is_isis_iface:
                             iface['isis'] = True  # mark ISIS interface
@@ -57,12 +69,22 @@ class NetworkARM:
                 dev['interfaces'] = ifaces
         return devs
 
+    def _has_p2p_links(self, dev_name) -> bool:
+        re_site = re.findall(r'(\w+)-.+', dev_name)
+        site_name = str.upper(re_site[0])
+        if self.sites_metadata and site_name in self.sites_metadata:
+            site_info = self.sites_metadata[site_name]
+            if 'p2p_links' in site_info:
+                return bool(site_info['p2p_links'])
+        return False
+
     def _get_link_type(self, site_name, port_name) -> str:
         if self.sites_metadata and site_name in self.sites_metadata:
             site_info = self.sites_metadata[site_name]
             if 'p2p_links' in site_info:
                 if ' ' not in port_name:
                     port_name = port_name.replace("GigE", "GigE ")
+                    port_name = port_name.replace("Bundle-Ether", "Bundle-Ether ")
                 if port_name in site_info['p2p_links']:
                     port_info = site_info['p2p_links'][port_name]
                     if 'ltype' in port_info:
@@ -86,9 +108,11 @@ class NetworkARM:
                                            capacities=f.Capacities(unit=1))
         al2s_l2_ns = al2s_node.add_network_service(name=al2s_node.name + '-ns', layer=f.Layer.L2,  stitch_node=True,
                                                    node_id=al2s_node.node_id + '-ns', nstype=f.ServiceType.MPLS)
-
+        regexVlanPort = re.compile(r'\/\d+/\d+\/\d+\.\d+$') # ignore BE (like Bundle-Ether101.3000) for site ports
         # add site nodes
         for node in nodes:
+            if 'interfaces' not in node:
+                continue
             # add switch node
             node_name = node['name']
             # TODO: get model name from NSO
@@ -165,6 +189,15 @@ class NetworkARM:
                     port_caps = f.Capacities(bw=speed_gbps)
                     # add labels (vlan ??)
                     port_labs = f.Labels(local_name=port_name, mac=port_mac)
+                    if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
+                        for ipv6_addr in port['ietf-ip:ipv6']['address']:
+                            ipv6_addr_ip = ipv6_addr['ip']
+                            ipv6_addr_prefix_len = ipv6_addr['prefix-length']
+                            port_labs = f.Labels().update(port_labs, local_name=port_name, ipv6=ipv6_addr_ip)
+                            # only take the first
+                            break
+                    elif regexVlanPort.search(port_name):  # skip if no ipv6 address (it's a slice vlan port)
+                        continue
                     if 'ietf-ip:ipv4' in port and 'address' in port['ietf-ip:ipv4']:
                         for ipv4_addr in port['ietf-ip:ipv4']['address']:
                             ipv4_addr_ip = ipv4_addr['ip']
@@ -174,13 +207,8 @@ class NetworkARM:
                                 "ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
                             # only take the first
                             break
-                    if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
-                        for ipv6_addr in port['ietf-ip:ipv6']['address']:
-                            ipv6_addr_ip = ipv6_addr['ip']
-                            ipv6_addr_prefix_len = ipv6_addr['prefix-length']
-                            port_labs = f.Labels().update(port_labs, local_name=port_name, ipv6=ipv6_addr_ip)
-                            # only take the first
-                            break
+                    elif regexVlanPort.search(port_name):  # skip if no ipv4 address (it's a slice vlan port)
+                        continue
                     sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
                                              node_id=port_nid, labels=port_labs,
                                              capacities=port_caps)

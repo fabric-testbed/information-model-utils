@@ -53,7 +53,7 @@ class OessARM:
         self.topology = f.SubstrateTopology()
         model_name = 'AL2S OESS'
         site_name = "AL2S"
-        node_name = "OESS"
+        node_name = "AL2S"
         node_nid = "node+" + node_name
         switch = self.topology.add_node(name=node_name, model=model_name, site=site_name,
                                         node_id=node_nid, ntype=f.NodeType.Switch,
@@ -87,7 +87,7 @@ class OessARM:
             # add capabilities
             port_caps = f.Capacities(bw=speed_gbps)
             # add labels
-            port_labs = f.Labels(local_name=port_name)
+            port_labs = f.Labels(device_name=port['device_name'], local_name=port['interface_name'])
             port_labs = _update_vlan_label(port_labs, vlan_range)
 
             # TODO: identify FABRIC facing interface
@@ -106,9 +106,9 @@ class OessARM:
                         or port['cloud_interconnect_type'] == 'gcp-partner-interconnect' \
                         or port['cloud_interconnect_type'] == 'azure-express-route':
                     # facility by cloud peering port
-                    fac_name = re.sub("\s|:|\(|\)", "_", f"Cloud_Facility:{port['cloud_provider']}")
+                    fac_name = re.sub("\s|:|\(|\)", "-", f"Cloud-Facility:{port['cloud_provider']}")
                     # print(f'Facility: {fac_name}\n')
-                    faci_name = re.sub("\s|:|\(|\)", "_",
+                    faci_name = re.sub("\s|:|\(|\)", "-",
                                        f"{port['cloud_provider']}:{port['cloud_region']}:{port_name}")
                     # facility_port attributes
                     facility_port_labs = f.Labels()
@@ -132,7 +132,7 @@ class OessARM:
                                                interfaces=[sp, faci])  # add additional interface to the facility
                     else:
                         facn = self.topology.add_node(name=fac_name, node_id=f'{port_nid}:facility+{fac_name}',
-                                                      site=re.sub("\s|:|\(|\)", "_", port['cloud_provider']),
+                                                      site=re.sub("\s|:|\(|\)", "-", port['cloud_provider']),
                                                       ntype=NodeType.Facility)
                         facs = facn.add_network_service(name=facn.name + '-ns',
                                                         node_id=f'{port_nid}:facility+{fac_name}-ns',

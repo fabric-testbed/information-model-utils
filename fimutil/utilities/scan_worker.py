@@ -12,7 +12,7 @@ import sys
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.worker_node import WorkerNode
 
-if __name__ == "__main__":
+def main():
 
     parser = argparse.ArgumentParser()
     # split into different mutually exclusive operations
@@ -34,6 +34,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
     elif args.debug >= 1:
         logging.basicConfig(level=logging.DEBUG)
+        # silence urllib
+        logging.getLogger('urllib3.connectionpool').setLevel(level=logging.INFO)
 
     if args.worker is None:
         print('You must specify the worker', file=sys.stderr)
@@ -54,7 +56,10 @@ if __name__ == "__main__":
 
     ralph = RalphURI(token=args.token, base_uri=args.base_uri, disable_ssl=args.no_ssl)
     worker = WorkerNode(uri=args.base_uri + 'data-center-assets/?hostname=' + args.worker,
-                        ralph=ralph)
+                        ralph=ralph, dp_switch=None)
     worker.parse()
     print(worker)
+
+if __name__ == "__main__":
+    main()
 

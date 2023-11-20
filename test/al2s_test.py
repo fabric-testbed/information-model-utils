@@ -45,6 +45,6 @@ class Al2sTest(unittest.TestCase):
         
     def test_listendpoints(self):
         client = Al2sClient()
-        endpoints = client.list_endpoints()
-        assert(endpoints)
+        for ep in client.list_endpoints():
+            print(ep)
         

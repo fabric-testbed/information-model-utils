@@ -30,6 +30,13 @@ class Al2sClient:
     ACCEPTED_STATUS_CODES = [200, range(300, 399)]
     
     MAX_RETRIES = 3
+    
+    CLOUD_VLAN_RANGES = {
+        "AZURE": list(range(1,4094)),
+        "AWS": list(range(2, 4094)),
+        "GCP": list(range(2,4094)),
+        "OCI": list(range(100, 4094))
+        }
 
     def __init__(self, *, config=None, config_file=None):
         if not config:
@@ -238,10 +245,14 @@ class Al2sClient:
         -------
         List of ranges of VLANs, e.g. [(1,10),(15, 20)]
         """
+        
         if interface_availability['delegations']:
             vlan_range = []
             for delegation in interface_availability['delegations']:
                 vlan_range += list(range(delegation['firstVlanId'], delegation['lastVlanId']))
+        elif interface["type"] == "cloudconnect":
+            provider = interface["cloudRegion"]["provider"]
+            vlan_range = self.CLOUD_VLAN_RANGES[provider] if provider in self.CLOUD_VLAN_RANGES.keys() else list(range(1,4096))
         else:
             vlan_range = list(range(1,4096))
             
@@ -274,7 +285,7 @@ class Al2sClient:
         
     def list_endpoints(self, cloud_connect=True) -> list:
         """
-        Return a list of all AL2S EndPoints (device+interface) with attributes
+        This generator returns a list of all AL2S EndPoints (device+interface) with attributes
         {   "name": "device_name:interface_name:...",
             "description": "",
             "device_name": "",
@@ -295,7 +306,6 @@ class Al2sClient:
         if cloud_connect is True:
             interface_list += self.cloudconnects
             
-        endpoint_list = []
         for interface in interface_list:
             endpoint = {}
             endpoint['name'] = interface['device']['name'] + ':' + interface['name']
@@ -311,10 +321,8 @@ class Al2sClient:
                 endpoint['cloud_region'] = interface_availability['interface']['cloudRegion']
                 endpoint['cloud_provider'] = endpoint['cloud_region']["provider"]
             
-            endpoint_list.append(endpoint)
-            print(endpoint)
+            yield endpoint
             
-        return endpoint_list
 
 class Al2sAmVNError(Exception):
     def __init__(self, msg: str):

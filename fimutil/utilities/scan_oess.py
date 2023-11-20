@@ -7,7 +7,8 @@ import argparse
 import logging
 import sys
 
-from fimutil.al2s.arm import OessARM
+# from fimutil.al2s.arm import OessARM
+from fimutil.al2s.arm import Al2sARM
 
 
 def main():
@@ -32,9 +33,10 @@ def main():
         print('You must specify the name of the file to save the model into', file=sys.stderr)
         sys.exit(-1)
 
-    arm = OessARM(config_file=args.config)
+    # arm = OessARM(config_file=args.config)
+    arm = Al2sARM(config_file=args.config)
 
-    logging.info('Querying OESS')
+    logging.info('Querying AL2S')
     arm.build_topology()
 
     logging.info('Generating delegations')

@@ -14,6 +14,14 @@ def to_ranges(iterable):
                                         lambda t: t[1] - t[0]):
         group = list(group)
         yield group[0][1], group[-1][1]
+        
+def ranges_to_str(iterable)->str:
+    rangeStr=""
+    for start, end in iterable:
+        item = f"{start}" if start == end else f"{start}-{end}"
+        rangeStr = item if rangeStr=="" else  rangeStr + "," + item
+        
+    return rangeStr
 
 class Al2sClient:
     """
@@ -314,7 +322,7 @@ class Al2sClient:
             endpoint['interface_name'] = interface['name']
             
             interface_availability = self._retrieve_interface_availability(interface['id'])
-            endpoint['vlan_range'] = self._get_available_vlans(interface, interface_availability)
+            endpoint['vlan_range'] = ranges_to_str(self._get_available_vlans(interface, interface_availability))
             endpoint['capacity'] = str(int(float(self._get_bandwidth(interface, interface_availability)[0]) / 1000.0))
             
             if interface['type'] == "cloudconnect":

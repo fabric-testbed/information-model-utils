@@ -26,8 +26,12 @@ def _update_vlan_label(labs, vlan: str):
 
 def _tralsate_cloud_region_name(name: str):
     if name not in REGION_NAME_MAP.keys():
+        for k in REGION_NAME_MAP.keys():
+            if k in name:
+                return REGION_NAME_MAP[k]
         return name
-    return REGION_NAME_MAP[name]
+    else:
+        return REGION_NAME_MAP[name]
 
 
 class OessARM:
@@ -183,7 +187,7 @@ class Al2sARM:
         self.config = self.get_config(config_file)
         self.al2s = Al2sClient(config=self.config)
         self.site_info = None
-        if 'sites_config' in self.config:
+        if self.config and 'sites_config' in self.config:
             sites_config_file = self.config['sites_config']
             if not os.path.isfile(sites_config_file):
                 raise Al2sAmArmError('sites_config file does not exists at: ' + sites_config_file)

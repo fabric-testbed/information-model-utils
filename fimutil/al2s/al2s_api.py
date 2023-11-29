@@ -28,7 +28,7 @@ class Al2sClient:
     Retrieve AL2S resources information via Virtual Networks REST API.
     """
     
-    CONF_FILE_PATH = ".al2s.conf"
+    CONF_FILE_PATH = "al2s.conf"
     
     ENDPOINT_SESSIONS_ACCESS = "/v1/sessions/access"
     ENDPOINT_FOOTPRINT_CLOUDCONNECT = "/v1/footprint/cloudconnect"

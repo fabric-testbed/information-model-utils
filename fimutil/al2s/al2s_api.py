@@ -326,8 +326,8 @@ class Al2sClient:
             endpoint['capacity'] = str(int(float(self._get_bandwidth(interface, interface_availability)[0]) / 1000.0))
             
             if interface['type'] == "cloudconnect":
-                endpoint['cloud_region'] = interface_availability['interface']['cloudRegion']
-                endpoint['cloud_provider'] = endpoint['cloud_region']["provider"]
+                endpoint['cloud_region'] = interface_availability['interface']['cloudRegion']['code'].split('/')[-1]
+                endpoint['cloud_provider'] = interface_availability['interface']['cloudRegion']["provider"]
             
             yield endpoint
             

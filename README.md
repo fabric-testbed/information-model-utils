@@ -153,10 +153,16 @@ Similar to above, interrogates NSO, PCE (future work) to create a model of the i
 
 Invocation:
 ```
-$ scan_al2s.py -m <model name>.graphml
+$ scan_al2s.py  -c config_file -m <model name>.graphml
 ```
 
 Saves the model into a file indicated with `-m` in GraphML format.
+
+Optional `-c` points to a YAML configure file with NSO and SR-PCE REST authentication parameters. Without it, default location is $HOME/.al2s.conf or /etc/netam.conf. Example below:
+```
+api_base_url: https://api.ns.internet2.edu
+api_access_key: xxx-xxx-xxx
+```
 
 ### generate_instance_flavors.py
 

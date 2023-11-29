@@ -36,7 +36,7 @@ def _tralsate_cloud_region_name(name: str):
 
 class OessARM:
     """
-    Generate AL2S AM resources information model.
+    Obsolete: Generate AL2S AM resources information model.
     """
 
     def __init__(self, *, config_file=None, isis_link_validation=False):
@@ -315,7 +315,7 @@ class Al2sARM:
             if not os.path.isfile(config_file):
                 config_file = '/etc/netam.conf'
                 if not os.path.isfile(config_file):
-                    raise Exception('Config file not found: %s' % config_file)
+                    return None
         with open(config_file, 'r') as fd:
             return yload(fd.read(), Loader=FullLoader)
 

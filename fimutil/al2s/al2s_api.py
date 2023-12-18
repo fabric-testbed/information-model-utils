@@ -40,10 +40,10 @@ class Al2sClient:
     MAX_RETRIES = 3
     
     CLOUD_VLAN_RANGES = {
-        "AZURE": list(range(1,4094)),
-        "AWS": list(range(2, 4094)),
-        "GCP": list(range(2,4094)),
-        "OCI": list(range(100, 4094))
+        "AZURE": list(range(1,4095)),
+        "AWS": list(range(2, 4095)),
+        "GCP": list(range(2,4095)),
+        "OCI": list(range(100, 4095))
         }
 
     def __init__(self, *, config=None, config_file=None):
@@ -260,7 +260,7 @@ class Al2sClient:
                 vlan_range += list(range(delegation['firstVlanId'], delegation['lastVlanId']))
         elif interface["type"] == "cloudconnect":
             provider = interface["cloudRegion"]["provider"]
-            vlan_range = self.CLOUD_VLAN_RANGES[provider] if provider in self.CLOUD_VLAN_RANGES.keys() else list(range(1,4096))
+            vlan_range = self.CLOUD_VLAN_RANGES[provider] if provider in self.CLOUD_VLAN_RANGES.keys() else list(range(1,4097))
         else:
             vlan_range = list(range(1,4096))
             

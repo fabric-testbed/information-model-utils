@@ -18,7 +18,8 @@ def to_ranges(iterable):
 def ranges_to_str(iterable)->str:
     rangeStr=""
     for start, end in iterable:
-        item = f"{start}" if start == end else f"{start}-{end}"
+        # item = f"{start}" if start == end else f"{start}-{end}"
+        item = f"{start}-{end}"
         rangeStr = item if rangeStr=="" else  rangeStr + "," + item
         
     return rangeStr

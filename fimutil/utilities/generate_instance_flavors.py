@@ -35,10 +35,9 @@ SPECIAL_FLAVORS = [
 ]
 """
 
-# 974 flavors
-# to get 474 use range(4, 66, 4)
+# 987 flavors
 CPUs = [x for x in range(4, 64, 2)]
-Disk = [10, 100, 500, 2000]
+Disk = [10, 100, 500, 1000]
 RAM = [4, 8, 16, 32, 64, 128, 256, 384]
 
 SPECIAL_FLAVORS = [
@@ -46,7 +45,11 @@ SPECIAL_FLAVORS = [
     [1, 4, 10],
     [1, 4, 100],
     [1, 4, 500],
-    [1, 4, 2000],
+    [1, 8, 10],
+    [1, 8, 50],
+    [1, 16, 10],
+    [1, 16, 50],
+    [1, 32, 50],
     [2, 2, 10],
     [2, 2, 100],
     [2, 4, 10],
@@ -54,8 +57,8 @@ SPECIAL_FLAVORS = [
     [2, 8, 10],
     [2, 8, 100],
     [2, 8, 500],
-    [2, 8, 2000],
-    [64, 384, 4000]
+    [2, 8, 1000],
+    [64, 384, 1000]
 ]
 
 
@@ -181,7 +184,7 @@ if __name__ == "__main__":
     # split into different mutually exclusive operations
 
     parser.add_argument("-f", "--file", action="store",
-                        help="output CSV file")
+                        help="output to a file")
     parser.add_argument("-o", "--format", action="store",
                         help="CSV, JSON, JSONA (JSON for Ansible), defaults to CSV",
                         default='csv')

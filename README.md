@@ -107,7 +107,8 @@ The general format example of the file is as follows (SITE1, SITE2 are all-caps 
         "Disk": "100TB",
         "Core": "15",
         "RAM": "2TB",
-        "CPU": "4"
+        "CPU": "4",
+        "cpu_allocation_ratio": 1
       }
     },
     "mac_offset": "f2:ab"
@@ -120,6 +121,10 @@ that the first octet of mac_offset must be [even](https://github.com/openstack/n
 
 `connected_ports` are only effective for generating JSON files (do not affect ARMs) which are then used to put other ports
 (not include uplinks and facility ports) into admin DOWN state.
+
+`cpu_allocation_ratio` intended to be used when enabling over subscription for a site. 
+By default, this is set to 1 implying no over subscription. 
+For EDC/EDUKY, this may be set to 16 indicating the total core count would be multiplied with this number in the model. 
 
 ### scan_net.py
 

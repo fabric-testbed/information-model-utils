@@ -104,9 +104,9 @@ class WorkerNode(RalphAsset):
             worker_override = self.config.get(self.site).get('workers').get(self.fields['Name'])
             self.model.fields['RAM'] = worker_override.get('RAM', self.model.fields['RAM'])
             self.model.fields['CPU'] = worker_override.get('CPU', self.model.fields['CPU'])
-            # Multiply the core count with cpu allocation ratio for over subscription
-            self.model.fields['CPU'] *= worker_override.get("cpu_allocation_ratio", 1)
             self.model.fields['Core'] = worker_override.get('Core', self.model.fields['Core'])
+            # Multiply the core count with cpu allocation ratio for over subscription
+            self.model.fields['Core'] = int(self.model.fields['Core']) * worker_override.get("cpu_allocation_ratio", 1)
             self.model.fields['Disk'] = worker_override.get('Disk', self.model.fields['Disk'])
 
         # find NVMe drives in 'disks' section

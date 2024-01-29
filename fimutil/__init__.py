@@ -3,5 +3,5 @@
 This is a package of Information Model utilitied for FABRIC
 for scanning different types of sites
 """
-__VERSION__ = "1.6.2"
+__VERSION__ = "1.6.3"
 __version__ = __VERSION__

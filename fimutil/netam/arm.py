@@ -166,7 +166,7 @@ class NetworkARM:
                 if 'ipv6_vlan_range' in site_info:
                     ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, vlan_range=site_info['ipv6_vlan_range'].split(','))
                 if 'loopback_ipv6' in node:
-                    ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, ipv4=node['loopback_ip6'])
+                    ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, ipv6=node['loopback_ipv6'])
                 ipv6_ns = switch.add_network_service(name=switch.name + '-ipv6-ns', layer=f.Layer.L3,
                                                      labels=ipv6_ns_labs,
                                                      node_id=switch.node_id + '-ipv6-ns', nstype=f.ServiceType.FABNetv6)

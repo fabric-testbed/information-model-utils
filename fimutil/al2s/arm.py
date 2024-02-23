@@ -4,7 +4,7 @@ from fim.slivers.interface_info import InterfaceType
 from fim.slivers.network_node import NodeType
 from fim.slivers.network_service import ServiceType
 
-from fimutil.al2s.oess import OessClient
+from fimutil.al2s.al2s_api import Al2sClient
 from fimutil.al2s.cloud_cfg import REGION_NAME_MAP
 from yaml import load as yload
 from yaml import FullLoader
@@ -25,11 +25,15 @@ def _update_vlan_label(labs, vlan: str):
 
 def _tralsate_cloud_region_name(name: str):
     if name not in REGION_NAME_MAP.keys():
+        for k in REGION_NAME_MAP.keys():
+            if k in name:
+                return REGION_NAME_MAP[k]
         return name
-    return REGION_NAME_MAP[name]
+    else:
+        return REGION_NAME_MAP[name]
 
 
-class OessARM:
+class Al2sARM:
     """
     Generate AL2S AM resources information model.
     """
@@ -37,12 +41,12 @@ class OessARM:
     def __init__(self, *, config_file=None, isis_link_validation=False):
         self.topology = None
         self.config = self.get_config(config_file)
-        self.oess = OessClient(config=self.config)
+        self.al2s = Al2sClient(config=self.config)
         self.site_info = None
-        if 'sites_config' in self.config:
+        if self.config and 'sites_config' in self.config:
             sites_config_file = self.config['sites_config']
             if not os.path.isfile(sites_config_file):
-                raise OessAmArmError('sites_config file does not exists at: ' + sites_config_file)
+                raise Al2sAmArmError('sites_config file does not exists at: ' + sites_config_file)
             with open(sites_config_file, 'r') as fd:
                 sites_metadata = yload(fd.read(), Loader=FullLoader)
                 if 'AL2S' in sites_metadata:
@@ -51,7 +55,7 @@ class OessARM:
     def build_topology(self) -> None:
         # start topology model
         self.topology = f.SubstrateTopology()
-        model_name = 'AL2S OESS'
+        model_name = 'AL2S VirtualNetworks'
         site_name = "AL2S"
         node_name = "AL2S"
         node_nid = "node+" + node_name
@@ -77,8 +81,7 @@ class OessARM:
         # TODO: Add ServiceController ?
 
         cloud_facs = {}  # cloud facility name to network service map
-        al2s_eps = self.oess.endpoints()
-        for port in al2s_eps:
+        for port in self.al2s.list_endpoints():
             port_name = port['name']
             # port_mac = port['phys-address'] # add to port_labs if available
             port_nid = f"port+al2s:{port_name}"
@@ -101,10 +104,11 @@ class OessARM:
                                      capacities=port_caps, stitch_node=False)
 
             # add facility_ports based on stitching metadata
-            if 'cloud_interconnect_type' in port and 'cloud_provider' in port:
-                if port['cloud_interconnect_type'] == 'aws-hosted-connection' \
-                        or port['cloud_interconnect_type'] == 'gcp-partner-interconnect' \
-                        or port['cloud_interconnect_type'] == 'azure-express-route':
+            if 'cloud_provider' in port:
+                # if port['cloud_interconnect_type'] == 'aws-hosted-connection' \
+                #         or port['cloud_interconnect_type'] == 'gcp-partner-interconnect' \
+                #         or port['cloud_interconnect_type'] == 'azure-express-route':
+                if True:
                     # facility by cloud peering port
                     fac_name = re.sub("\s|:|\(|\)", "-", f"Cloud-Facility:{port['cloud_provider']}")
                     # print(f'Facility: {fac_name}\n')
@@ -158,7 +162,7 @@ class OessARM:
 
     def write_topology(self, file_name: str) -> None:
         if not self.topology:
-            raise OessAmArmError("Topology is None")
+            raise Al2sAmArmError("Topology is None")
         self.topology.serialize(file_name=file_name)
 
     def get_config(self, config_file):
@@ -167,11 +171,11 @@ class OessARM:
             if not os.path.isfile(config_file):
                 config_file = '/etc/netam.conf'
                 if not os.path.isfile(config_file):
-                    raise Exception('Config file not found: %s' % config_file)
+                    return None
         with open(config_file, 'r') as fd:
             return yload(fd.read(), Loader=FullLoader)
 
 
-class OessAmArmError(Exception):
+class Al2sAmArmError(Exception):
     def __init__(self, msg: str):
-        super().__init__(f'OessAmArmError: {msg}')
+        super().__init__(f'Al2sAmArmError: {msg}')

@@ -11,6 +11,7 @@ This library uses different sources to extract necessary information to build
 site and network advertisement models for FABRIC control framework:
 - fimutil.ralph - uses Ralph inventory system REST API to create site models
 - fimutil.netam - uses NSO and other sources to create a network model
+- fimutil.al2s - uses Internet2 Virtual Networks API to create a network model
 
 ### Ralph REST
 Since Ralph presents information in the form of nested dictionaries, the library
@@ -150,6 +151,23 @@ sr_pce_pass: xxxxx
 sites_config: ...NetworkController/device-config/ansible/inventory/sites.yaml
 ```
 The `sites_config` yaml file is generated priorly with `NetworkController/device-config/ansible/inventory/fabric-cisco-dev.py --yaml`.
+
+### scan_al2s.py
+
+Similar to above, interrogates NSO, PCE (future work) to create a model of the inter-site network.
+
+Invocation:
+```
+$ scan_al2s.py  -c config_file -m <model name>.graphml
+```
+
+Saves the model into a file indicated with `-m` in GraphML format.
+
+Optional `-c` points to a YAML configure file with NSO and SR-PCE REST authentication parameters. Without it, default location is $HOME/al2s.conf or /etc/al2s.conf. Example below:
+```
+api_base_url: https://api.ns.internet2.edu
+api_access_key: xxx-xxx-xxx
+```
 
 ### generate_instance_flavors.py
 

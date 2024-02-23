@@ -193,6 +193,8 @@ class NetworkARM:
             if 'interfaces' in node:
                 for port in node['interfaces']:
                     port_name = port['name']
+                    if 'phys-address' not in port:
+                        continue
                     port_mac = port['phys-address']
                     port_nid = f"port+{node_name}:{port_name}"
                     speed_gbps = int(int(port['speed']) / 1000000000)

@@ -16,8 +16,8 @@ class GPU:
     """
     Model: str
     Description: str
-    BDF: str
-    NUMA: str
+    BDF: list
+    NUMA: list
 
     @staticmethod
     def find_gpus(node_raw_json) -> List[Any]:
@@ -33,8 +33,18 @@ class GPU:
                     logging.debug(f'Detected GPU {gpu_model}')
                     model = gpu_model
                     description = custom_fields[field]
-                    bdf = custom_fields[field + '_pci_id']
+                    # May contain multiple PCI devices depending on GPU type
+                    # GPUs at CIEN rack have both an audio and video PCI device associated
+                    # [root@cien-w1 ~]# lspci  | grep 25:00.
+                    # 25:00.0 VGA compatible controller: NVIDIA Corporation AD102GL [RTX 6000 Ada Generation] (rev a1)
+                    # 25:00.1 Audio device: NVIDIA Corporation AD102 High Definition Audio Controller (rev a1)
+                    # bdf field woul show as 25:00.0 25:00.1
+                    # Extract PCI devices information
+                    bdf_values = custom_fields.get(f'{field}_pci_id', '').split()
+                    bdf = [bdf.strip() for bdf in bdf_values]
                     # -1 means unknown
-                    numa = custom_fields.get(field + '_numa_node', '-1')
+                    # Extract NUMA information
+                    numa_val = custom_fields.get(f'{field}_numa_node', '-1')
+                    numa = [numa_val] * len(bdf) if bdf else [numa_val]
                     ret.append(GPU(model, description, bdf, numa))
         return ret

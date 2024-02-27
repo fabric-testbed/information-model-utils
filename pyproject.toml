@@ -4,7 +4,9 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "fim-utils"
-authors = [{name = "Ilya Baldin", email = "ibaldin@renci.org"}, {name = "Xi Yang", email="xiyang@es.net"}, {name="Hussamuddin Nasir", email="nasir@netlab.uky.edu"}]
+authors = [{name = "Ilya Baldin", email = "ibaldin@renci.org"},
+           {name = "Xi Yang", email="xiyang@es.net"},
+           {name="Hussamuddin Nasir", email="nasir@netlab.uky.edu"}]
 readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License",
@@ -13,7 +15,7 @@ classifiers = ["License :: OSI Approved :: MIT License",
 dynamic = ["version", "description"]
 requires-python = '>=3.9'
 dependencies = [
-	"fabric_fim >= 1.6.0",
+	"fabric_fim >= 1.6.2",
     "pyjq == 2.6.0",
 	"jsonpath_ng == 1.5.3",
 	]

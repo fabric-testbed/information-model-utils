@@ -54,6 +54,13 @@ class NetworkARM:
                 if isis_ifaces is None:
                     raise NetAmArmError(f"Device '{dev_name}' has no active isis interface - fix that or consider '--skip-device device-name'")
                 for iface in list(ifaces):
+                    # get loopback addresses
+                    if iface['name'] == 'Loopback0':
+                        if 'ietf-ip:ipv4' in iface:
+                            dev['loopback_ipv4'] = iface['ietf-ip:ipv4']['address'][0]['ip']
+                        if 'ietf-ip:ipv6' in iface:
+                            dev['loopback_ipv6'] = iface['ietf-ip:ipv6']['address'][0]['ip']
+                        continue
                     # skip if not an isis l2 p2p interfaces
                     is_isis_iface = False
                     for isis_iface in isis_ifaces:
@@ -139,6 +146,8 @@ class NetworkARM:
                     ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, ipv4_subnet=site_info['ipv4_net'])
                 if 'ipv4_vlan_range' in site_info:
                     ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, vlan_range=site_info['ipv4_vlan_range'].split(','))
+                if 'loopback_ipv4' in node:
+                    ipv4_ns_labs = f.Labels.update(ipv4_ns_labs, ipv4=node['loopback_ipv4'])
                 ipv4_ns = switch.add_network_service(name=switch.name + '-ipv4-ns', layer=f.Layer.L3,
                                                      labels=ipv4_ns_labs,
                                                      node_id=switch.node_id + '-ipv4-ns', nstype=f.ServiceType.FABNetv4)
@@ -156,6 +165,8 @@ class NetworkARM:
                     ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, ipv6_subnet=site_info['ipv6_net'])
                 if 'ipv6_vlan_range' in site_info:
                     ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, vlan_range=site_info['ipv6_vlan_range'].split(','))
+                if 'loopback_ipv6' in node:
+                    ipv6_ns_labs = f.Labels.update(ipv6_ns_labs, ipv6=node['loopback_ipv6'])
                 ipv6_ns = switch.add_network_service(name=switch.name + '-ipv6-ns', layer=f.Layer.L3,
                                                      labels=ipv6_ns_labs,
                                                      node_id=switch.node_id + '-ipv6-ns', nstype=f.ServiceType.FABNetv6)
@@ -182,6 +193,8 @@ class NetworkARM:
             if 'interfaces' in node:
                 for port in node['interfaces']:
                     port_name = port['name']
+                    if 'phys-address' not in port:
+                        continue
                     port_mac = port['phys-address']
                     port_nid = f"port+{node_name}:{port_name}"
                     speed_gbps = int(int(port['speed']) / 1000000000)

@@ -21,8 +21,6 @@ class P4Switch(RalphAsset):
         super().__init__(uri=uri, ralph=ralph)
         self.type = RalphAssetType.P4Switch
         self.model = None
-        self.dp_p4_ports = None
-        self.switch_ip = None
 
     def parse(self):
         super().parse()

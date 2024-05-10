@@ -71,13 +71,11 @@ class Site:
             query = {'hostname': f'{self.name.lower()}-p4-sw' + self.domain}
             results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
                                                  urlencode(query))
-            print(f"KOMAL ---- {results}")
             p4_switch_url = pyjq.one('[ .results[0].url ]', results)[0]
             self.p4_switch = P4Switch(uri=p4_switch_url, ralph=self.ralph)
             self.p4_switch.parse()
             print("----------------------------------")
             print(self.p4_switch)
-            print(self.p4_switch.components)
             print("----------------------------------")
         except ValueError:
             logging.warning('Unable to find a p4 switch in site, continuing')

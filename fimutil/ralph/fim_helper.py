@@ -497,6 +497,43 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                       interfaces=[sp, v])
         link_idx += 1
 
+    # create p4 switch with interfaces and links back to dataplane switch ports
+    logging.debug('Adding p4 switch')
+    if site.p4_switch is None:
+        logging.info(f'P4 Switch was not detected/catalogued')
+        return topo
+
+    # check if we are using someone else's DP switch
+    real_switch_site = site.name
+
+    # this prefers an IP address, but uses S/N if IP is None (like in GENI racks)
+    p4_name = p4_switch_name_id(real_switch_site.lower(),
+                                site.p4_switch.fields['IP'] if site.p4_switch.fields['IP'] else site.p4_switch.fields['SN'])
+    logging.info(f'Adding P4 switch {dp_name}')
+    p4 = topo.add_node(name=p4_name[0],
+                       node_id=p4_name[1],
+                       site=site.name, ntype=NodeType.Switch, stitch_node=True)
+
+    p4_service_type = ServiceType.MPLS
+    p4_ns = p4.add_network_service(name=p4.name + '-ns', node_id=p4.node_id + '-ns',
+                                   nstype=p4_service_type, stitch_node=True)
+
+    # add switch ports (they are stitch nodes, so just need to get their ids right)
+    '''
+    TODO KOMAL
+    link_idx = 1
+    for k, v in port_map.items():
+        sp = p4_ns.add_interface(name=k,
+                                 node_id=dp_port_id(dp.name, k),
+                                 itype=InterfaceType.TrunkPort,
+                                 stitch_node=True)
+        topo.add_link(name='l' + str(link_idx),
+                      node_id=sp.node_id + '-DAC',
+                      ltype=LinkType.Patch,
+                      interfaces=[sp, v])
+        link_idx += 1
+    '''
+
     return topo
 
 

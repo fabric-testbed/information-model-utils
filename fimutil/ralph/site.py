@@ -72,11 +72,9 @@ class Site:
             results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
                                                  urlencode(query))
             p4_switch_url = pyjq.one('[ .results[0].url ]', results)[0]
+            logging.info(f'Identified P4 switch {p4_switch_url=}')
             self.p4_switch = P4Switch(uri=p4_switch_url, ralph=self.ralph)
             self.p4_switch.parse()
-            print("----------------------------------")
-            print(self.p4_switch)
-            print("----------------------------------")
         except ValueError:
             logging.warning('Unable to find a p4 switch in site, continuing')
 
@@ -162,8 +160,13 @@ class Site:
             ret["Storage"] = self.storage.fields.copy()
         if self.dp_switch:
             ret["DataPlane"] = self.dp_switch.fields.copy()
-        if self.dp_switch:
+        if self.p4_switch:
             ret["P4"] = self.p4_switch.fields.copy()
+            p4_dp_ports = self.p4_switch.get_dp_ports()
+            p4_dp_ports = list(set(p4_dp_ports))
+            p4_dp_ports.sort()
+            ret["P4"]["Connected_ports"] = p4_dp_ports
+
         # collect port information from all workers
         dp_ports = list()
         for w in self.workers:

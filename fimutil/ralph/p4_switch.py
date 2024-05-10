@@ -52,3 +52,15 @@ class P4Switch(RalphAsset):
     def __str__(self):
         ret = super().__str__()
         return ret + '\n\t' + str(self.model)
+
+    def get_dp_ports(self):
+        """
+        Return a list of names of DP switch ports this node is connected to
+        """
+        dp_ports = list()
+        for n, comp in self.components.items():
+            if comp.__dict__.get('type') and comp.type == RalphAssetType.EthernetCardPF:
+                if comp.fields.get('Peer_port'):
+                    dp_ports.append(comp.fields.get('Peer_port'))
+
+        return dp_ports

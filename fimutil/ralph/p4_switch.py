@@ -12,10 +12,7 @@ class P4Switch(RalphAsset):
     """
     Dataplane switch
     """
-    FIELD_MAP = '{Name: .hostname, SN: .sn, IP: .ipaddresses[0], ' \
-                'AL2S_SWITCH: .custom_fields.al2s_remote_switch_name,' \
-                'AL2S_vlans: .custom_fields.al2s_vlan_ranges, ' \
-                'Local_vlans: .custom_fields.dataplane_vlan_ranges}'
+    FIELD_MAP = '{Name: .hostname, SN: .sn, IP: .ipaddresses[0]}'
 
     def __init__(self, *, uri: str, ralph: RalphURI):
         super().__init__(uri=uri, ralph=ralph)

@@ -503,33 +503,34 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
         logging.info(f'P4 Switch was not detected/catalogued')
         return topo
 
-    # check if we are using someone else's DP switch
-    real_switch_site = site.name
-
     # this prefers an IP address, but uses S/N if IP is None (like in GENI racks)
+    logging.info(f'Adding P4 switch {site.name}')
+
     p4_name = p4_switch_name_id(real_switch_site.lower(),
                                 site.p4_switch.fields['IP'] if site.p4_switch.fields['IP'] else site.p4_switch.fields['SN'])
-    logging.info(f'Adding P4 switch {p4_name}')
-    p4 = topo.add_switch(name=p4_name[0], site=site.name, node_id=p4_name[1])
-    print("--------------------------------")
-    print(f"KOMAL -p4-- {p4}")
-    print(f"KOMAL -interfaces-- {p4.interfaces}")
-    print("--------------------------------")
-    print(site.p4_switch.components)
-    print("--------------------------------")
-    '''
+
     p4 = topo.add_node(name=p4_name[0],
                        node_id=p4_name[1],
                        site=site.name, ntype=NodeType.Switch, stitch_node=True)
-    '''
-    # list of DP switch ports connected to the P4 switch in the order of port IDs 0-8 -> p1-p8
-    # they would typically be 400G->100G breakouts
-    dp_to_p4_ports = ['HundredGigeE0/0/0/0/26.1', 'HundredGigeE0/0/0/0/26.2', 'HundredGigeE0/0/0/0/26.3',
-                      'HundredGigeE0/0/0/0/26.4',
-                      'HundredGigeE0/0/0/0/27.1', 'HundredGigeE0/0/0/0/27.2', 'HundredGigeE0/0/0/0/27.3',
-                      'HundredGigeE0/0/0/0/27.4']
 
-    '''
+    p4_service_type = ServiceType.MPLS
+    p4_ns = p4.add_network_service(name=p4.name + '-ns', node_id=p4.node_id + '-ns',
+                                   nstype=p4_service_type, stitch_node=False)
+
+    index = 1
+    dp_to_p4_ports = []
+    for c in site.p4_switch.components.values():
+        if "Management" in c:
+            print(f"KOMAL -- skipping component Management interface: {c}")
+            continue
+        print(f"KOMAL -- processing component: {c}")
+        labels = Labels(local_name=f'p{index}')
+        capacities = Capacities(bw=100)
+        p4_ns.add_interface(name=f'p{index}', node_id=p4_name[1] + f'-int{index}' if p4_name[1] else None,
+                            itype=InterfaceType.DedicatedPort,
+                            labels=labels, capacities=capacities)
+        # Build dp_to_p4_ports here
+
     # add dp switch ports that link to P4 switch ports (note they are not stitch nodes!!)
     for d, p4idx in zip(dp_to_p4_ports, range(1, 8 + 1)):
         sp = dp_ns.add_interface(name=d, itype=InterfaceType.TrunkPort,
@@ -538,22 +539,6 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                            interfaces=[p4.interfaces[f'p{p4idx}'], sp],
                            node_id=sp.node_id + '-DAC')
         link_idx += 1
-    '''
-    # add switch ports (they are stitch nodes, so just need to get their ids right)
-    '''
-    TODO KOMAL
-    link_idx = 1
-    for k, v in port_map.items():
-        sp = p4_ns.add_interface(name=k,
-                                 node_id=dp_port_id(dp.name, k),
-                                 itype=InterfaceType.TrunkPort,
-                                 stitch_node=True)
-        topo.add_link(name='l' + str(link_idx),
-                      node_id=sp.node_id + '-DAC',
-                      ltype=LinkType.Patch,
-                      interfaces=[sp, v])
-        link_idx += 1
-    '''
 
     return topo
 

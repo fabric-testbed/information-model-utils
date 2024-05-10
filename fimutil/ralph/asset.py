@@ -22,6 +22,7 @@ class RalphAssetType(Enum):
     DPSwitch = auto()
     Abstract = auto()
     FPGA = auto()
+    P4Switch = auto()
 
     def __str__(self):
         return self.name

@@ -5,6 +5,7 @@ import pyjq
 from typing import Dict
 import json
 
+from fimutil.ralph.p4_switch import P4Switch
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.worker_node import WorkerNode
 from fimutil.ralph.storage import Storage
@@ -23,6 +24,7 @@ class Site:
         self.workers = list()
         self.storage = None
         self.dp_switch = None
+        self.p4_switch = None
         self.ptp = False
         self.name = site_name
         self.domain = domain
@@ -63,6 +65,22 @@ class Site:
             self.dp_switch.parse()
         except ValueError:
             logging.warning('Unable to find a dataplane switch in site, continuing')
+
+        try:
+            logging.info(f'Searching for P4 switch URL')
+            query = {'hostname': f'{self.name.lower()}-p4-sw' + self.domain}
+            results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
+                                                 urlencode(query))
+            print(f"KOMAL ---- {results}")
+            p4_switch_url = pyjq.one('[ .results[0].url ]', results)[0]
+            self.p4_switch = P4Switch(uri=p4_switch_url, ralph=self.ralph)
+            self.p4_switch.parse()
+            print("----------------------------------")
+            print(self.p4_switch)
+            print(self.p4_switch.components)
+            print("----------------------------------")
+        except ValueError:
+            logging.warning('Unable to find a p4 switch in site, continuing')
 
         query = {'hostname': f'{self.name.lower()}-time' + self.domain}
         results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
@@ -134,6 +152,8 @@ class Site:
             assets.append(str(self.storage))
         if self.dp_switch:
             assets.append(str(self.dp_switch))
+        if self.p4_switch:
+            assets.append(str(self.p4_switch))
         for w in self.workers:
             assets.append(str(w))
         return '\n'.join(assets)
@@ -144,6 +164,8 @@ class Site:
             ret["Storage"] = self.storage.fields.copy()
         if self.dp_switch:
             ret["DataPlane"] = self.dp_switch.fields.copy()
+        if self.dp_switch:
+            ret["P4"] = self.p4_switch.fields.copy()
         # collect port information from all workers
         dp_ports = list()
         for w in self.workers:

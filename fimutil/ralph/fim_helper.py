@@ -536,7 +536,9 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                 continue
             port_name = match.group(1)
 
-        labels = Labels(local_name=f'p{port_name}', mac=c.fields['MAC'])
+        labels = Labels(local_name=f'p{port_name}')
+        if c.fields['MAC']:
+            labels.mac = c.fields['MAC']
 
         connection = c.fields['Connection']
 

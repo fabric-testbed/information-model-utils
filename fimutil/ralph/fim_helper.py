@@ -497,6 +497,72 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                       interfaces=[sp, v])
         link_idx += 1
 
+    # create p4 switch with interfaces and links back to dataplane switch ports
+    logging.debug('Adding p4 switch')
+    if site.p4_switch is None:
+        logging.info(f'P4 Switch was not detected/catalogued')
+        return topo
+
+    # this prefers an IP address, but uses S/N if IP is None (like in GENI racks)
+    logging.info(f'Adding P4 switch {site.name}')
+
+    p4_name = p4_switch_name_id(real_switch_site.lower(),
+                                site.p4_switch.fields['IP'] if site.p4_switch.fields['IP'] else site.p4_switch.fields['SN'])
+
+    p4 = topo.add_node(name=p4_name[0],
+                       node_id=p4_name[1],
+                       site=site.name, ntype=NodeType.Switch, stitch_node=True)
+
+    p4_service_type = ServiceType.MPLS
+    p4_ns = p4.add_network_service(name=p4.name + '-ns', node_id=p4.node_id + '-ns',
+                                   nstype=p4_service_type, stitch_node=False)
+
+    dp_to_p4_ports = []
+
+    for c in site.p4_switch.components.values():
+        speed, unit = __parse_speed_spec(c.fields['Speed'])
+        speed = __normalize_units(speed, unit, 'G')
+        speed_int = int(speed)
+        capacities = Capacities(bw=speed_int)
+
+        description = c.fields['Description']
+        if "management" in description:
+            port_name = "mgmt"
+        else:
+            # Use regular expression to find the value after "Port"
+            match = re.search(r'Port (\d+)', description)
+            if not match:
+                logging.warning(f"Port could not be determined from Description for component: {c}")
+                continue
+            port_name = match.group(1)
+
+        labels = Labels(local_name=f'p{port_name}')
+        if c.fields['MAC']:
+            labels.mac = c.fields['MAC']
+
+        connection = c.fields['Connection']
+
+        match2 = re.search(r'port\s+(\S+)', connection, re.IGNORECASE)
+        if not match2:
+            logging.warning(f"Data Plane port could not be determined from Connection for component: {c}")
+            continue
+
+        # Build dp_to_p4_ports here
+        dp_to_p4_ports.append(match2.group(1))
+
+        p4_ns.add_interface(name=f'p{port_name}', node_id=p4_name[1] + f'-int{port_name}' if p4_name[1] else None,
+                            itype=InterfaceType.DedicatedPort,
+                            labels=labels, capacities=capacities)
+
+    # add dp switch ports that link to P4 switch ports (note they are not stitch nodes!!)
+    for d, p4idx in zip(dp_to_p4_ports, range(1, 8 + 1)):
+        sp = dp_ns.add_interface(name=d, itype=InterfaceType.TrunkPort,
+                                 node_id=dp_port_id(dp.name, d), stitch_node=False)
+        topo.add_link(name='l' + str(link_idx), ltype=LinkType.Patch,
+                           interfaces=[p4.interfaces[f'p{p4idx}'], sp],
+                           node_id=sp.node_id + '-DAC')
+        link_idx += 1
+
     return topo
 
 

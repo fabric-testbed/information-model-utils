@@ -520,7 +520,6 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
     dp_to_p4_ports = []
 
     for c in site.p4_switch.components.values():
-        print(f"KOMAL -- processing component: {c}")
         speed, unit = __parse_speed_spec(c.fields['Speed'])
         speed = __normalize_units(speed, unit, 'G')
         speed_int = int(speed)
@@ -528,17 +527,17 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
 
         description = c.fields['Description']
 
-        # Use regular expression to find the value after "Port"
-        match = re.search(r'Port (\d+)', description)
-        if not match:
-            logging.warning(f"Port could not be determined from Description for component: {c}")
-            continue
-        interface_suffix = match.group(1)
-        index = interface_suffix
-        labels = Labels(local_name=f'p{index}')
-
         if "management" in description:
-            interface_suffix += "mgmt"
+            port_name = "mgmt"
+        else:
+            # Use regular expression to find the value after "Port"
+            match = re.search(r'Port (\d+)', description)
+            if not match:
+                logging.warning(f"Port could not be determined from Description for component: {c}")
+                continue
+            port_name = match.group(1)
+
+        labels = Labels(local_name=f'p{port_name}')
 
         connection = c.fields['Connection']
 
@@ -547,12 +546,12 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
             logging.warning(f"Data Plane port could not be determined from Connection for component: {c}")
             continue
 
+        # Build dp_to_p4_ports here
         dp_to_p4_ports.append(match2.group(1))
 
-        p4_ns.add_interface(name=f'p{index}', node_id=p4_name[1] + f'-int{interface_suffix}' if p4_name[1] else None,
+        p4_ns.add_interface(name=f'p{port_name}', node_id=p4_name[1] + f'-int{port_name}' if p4_name[1] else None,
                             itype=InterfaceType.DedicatedPort,
                             labels=labels, capacities=capacities)
-        # Build dp_to_p4_ports here
 
     # add dp switch ports that link to P4 switch ports (note they are not stitch nodes!!)
     for d, p4idx in zip(dp_to_p4_ports, range(1, 8 + 1)):

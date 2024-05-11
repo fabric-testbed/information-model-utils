@@ -517,16 +517,39 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
     p4_ns = p4.add_network_service(name=p4.name + '-ns', node_id=p4.node_id + '-ns',
                                    nstype=p4_service_type, stitch_node=False)
 
-    index = 1
     dp_to_p4_ports = []
+
     for c in site.p4_switch.components.values():
-        if "Management" in c:
-            print(f"KOMAL -- skipping component Management interface: {c}")
-            continue
         print(f"KOMAL -- processing component: {c}")
+        speed, unit = __parse_speed_spec(c.fields['Speed'])
+        speed = __normalize_units(speed, unit, 'G')
+        speed_int = int(speed)
+        capacities = Capacities(bw=speed_int)
+
+        description = c.fields['Description']
+
+        # Use regular expression to find the value after "Port"
+        match = re.search(r'Port (\d+)', description)
+        if not match:
+            logging.warning(f"Port could not be determined from Description for component: {c}")
+            continue
+        interface_suffix = match.group(1)
+        index = interface_suffix
         labels = Labels(local_name=f'p{index}')
-        capacities = Capacities(bw=100)
-        p4_ns.add_interface(name=f'p{index}', node_id=p4_name[1] + f'-int{index}' if p4_name[1] else None,
+
+        if "management" in description:
+            interface_suffix += "mgmt"
+
+        connection = c.fields['Connection']
+
+        match2 = re.search(r'port\s+(\S+)', connection, re.IGNORECASE)
+        if not match2:
+            logging.warning(f"Data Plane port could not be determined from Connection for component: {c}")
+            continue
+
+        dp_to_p4_ports.append(match2.group(1))
+
+        p4_ns.add_interface(name=f'p{index}', node_id=p4_name[1] + f'-int{interface_suffix}' if p4_name[1] else None,
                             itype=InterfaceType.DedicatedPort,
                             labels=labels, capacities=capacities)
         # Build dp_to_p4_ports here

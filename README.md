@@ -94,7 +94,6 @@ The config file (by default `.scan-config.json` allows to statically override ce
 The general format example of the file is as follows (SITE1, SITE2 are all-caps site names):
 ```
 {
-  "ram_offset": 24
   "SITE1": {
     "dpswitch": {
       "URL": <URL of SITE2's dp switch in Ralph>,
@@ -118,7 +117,6 @@ The general format example of the file is as follows (SITE1, SITE2 are all-caps 
   }
 }
 ```
-`ram_offset` specifies an offset to subtract from the actual RAM value. This is adjustment needed to for RAM allocated to NOVA on the workers.
 `mac_offset` intended to be used with OpenStack sites to aid unique MAC generation for vNICs. Note
 that the first octet of mac_offset must be [even](https://github.com/openstack/neutron-lib/blob/cf494c8be10b36daf238fa12cf7c615656e6640d/neutron_lib/api/validators/__init__.py#L40).
 

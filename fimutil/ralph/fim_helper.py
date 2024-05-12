@@ -504,14 +504,15 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
         return topo
 
     # this prefers an IP address, but uses S/N if IP is None (like in GENI racks)
-    logging.info(f'Adding P4 switch {site.name}')
+    logging.debug(f'Adding P4 switch {site.name}')
 
     p4_name = p4_switch_name_id(real_switch_site.lower(),
                                 site.p4_switch.fields['IP'] if site.p4_switch.fields['IP'] else site.p4_switch.fields['SN'])
-
+    logging.info(f'Adding P4 switch {p4_name}')
     p4 = topo.add_node(name=p4_name[0],
                        node_id=p4_name[1],
-                       site=site.name, ntype=NodeType.Switch, stitch_node=True)
+                       site=site.name, ntype=NodeType.Switch, stitch_node=False,
+                       capacities=Capacities(units=1))
 
     p4_service_type = ServiceType.MPLS
     p4_ns = p4.add_network_service(name=p4.name + '-ns', node_id=p4.node_id + '-ns',

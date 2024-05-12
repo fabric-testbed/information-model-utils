@@ -1,6 +1,5 @@
 import pyjq
 import logging
-from typing import List
 
 from fimutil.ralph.ralph_uri import RalphURI
 from fimutil.ralph.asset import RalphAsset, RalphAssetType, RalphAssetMimatch

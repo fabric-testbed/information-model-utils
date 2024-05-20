@@ -1,3 +1,4 @@
+import json
 from typing import Tuple, List, Dict, Any, Set
 import logging
 import re
@@ -309,6 +310,10 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
     loc = None
     if address is not None:
         loc = Location(postal=address)
+        loc.to_latlon()
+
+    if config and config.get(site.name) and config.get(site.name).get('location'):
+        loc = Location.from_json(json_string=json.dumps(config.get(site.name).get('location')))
 
     topo = SubstrateTopology()
 

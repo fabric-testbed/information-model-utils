@@ -519,7 +519,7 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
                        site=site.name, ntype=NodeType.Switch, stitch_node=False,
                        capacities=Capacities(unit=1), management_ip=site.p4_switch.fields['IP'])
 
-    p4_service_type = ServiceType.MPLS
+    p4_service_type = ServiceType.P4
     p4_ns = p4.add_network_service(name=p4.name + '-ns', node_id=p4.node_id + '-ns',
                                    nstype=p4_service_type, stitch_node=False)
 

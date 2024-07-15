@@ -102,7 +102,8 @@ class Site:
             except ValueError:
                 logging.warning('Unable to find PTP server in site, continuing')
 
-        query = {'hostname__regex': f'{self.name.lower()}-w[0123456789]' + self.domain}
+        #query = {'hostname__regex': f'{self.name.lower()}-w[0123456789]' + self.domain}
+        query = {'hostname__startswith': f'{self.name.lower()}-w','limit': 100}
         results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
                                              urlencode(query))
 
@@ -112,11 +113,11 @@ class Site:
         # not sure why the regex doesn't work as expected, ({self.name.lower()}-w[0123456789]+)
         # so instead another simple regex to look for workers with two digit indexes
 
-        query = {'hostname__regex': f'{self.name.lower()}-w[0123456789][0123456789]' + self.domain}
-        results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
-                                             urlencode(query))
+        #query = {'hostname__regex': f'{self.name.lower()}-w[0123456789][0123456789]' + self.domain}
+        #results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
+        #                                     urlencode(query))
 
-        worker_urls.extend(pyjq.one('[ .results[].url ]', results))
+        #worker_urls.extend(pyjq.one('[ .results[].url ]', results))
 
         logging.info(f'Identified {len(worker_urls)} workers')
 

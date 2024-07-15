@@ -98,6 +98,12 @@ class WorkerNode(RalphAsset):
         if disk:
             self.model.fields['Disk'] = f'{disk}G'
 
+        if self.config and self.config.get(self.site) and self.config.get(self.site).get('ram_offset'):
+            ram_offset = self.config.get(self.site).get('ram_offset')
+            ram -= ram_offset
+            if ram > 0:
+                self.model.fields['RAM'] = f'{ram}G'
+
         # override from config if present
         if self.config and self.config.get(self.site) and self.config.get(self.site).get('workers') and \
             self.config.get(self.site).get('workers').get(self.fields['Name']):

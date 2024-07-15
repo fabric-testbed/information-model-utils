@@ -72,6 +72,8 @@ class Site:
             results = self.ralph.get_json_object(self.ralph.base_uri + 'data-center-assets/?' +
                                                  urlencode(query))
             p4_switch_url = pyjq.one('[ .results[0].url ]', results)[0]
+            if not p4_switch_url:
+                raise ValueError
             logging.info(f'Identified P4 switch {p4_switch_url=}')
             self.p4_switch = P4Switch(uri=p4_switch_url, ralph=self.ralph)
             self.p4_switch.parse()

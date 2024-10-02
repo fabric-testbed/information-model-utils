@@ -6,7 +6,7 @@ import logging
 import re
 
 # Xilinx Corporation Alveo U280 Golden Image
-FPGA_MODELS = ['Alveo U280']
+FPGA_MODELS = ['Alveo U280', 'Alveo SN1022']
 PORT_REGEX = ".+port ([\\w\\d/]+) .+"
 MAX_PORTS = 8
 

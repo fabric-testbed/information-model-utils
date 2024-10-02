@@ -12,6 +12,21 @@ def _in_same_network(ip1: str, ip2: str, netmask: str) -> bool:
     return IPv4Interface(f'{ip1}/{netmask}').network == IPv4Interface(f'{ip2}/{netmask}').network
 
 
+def _generate_device_model_ciena_saos10(site_info: dict, dev: dict):
+    dev_name = dev['name']
+    re_site = re.findall(r'(\w+)-.+', dev_name)
+    site_name = str.upper(re_site[0])
+    site_etc = site_info['site_etc']
+    dev['interfaces'] = []
+    if 'ifopts' in site_etc:
+        for name in site_etc['ifopts']:
+            iface = site_etc['ifopts'][name]
+            iface['name'] = name
+            dev['interfaces'].append(iface)
+        dev['loopback_ipv4'] = site_etc['loopback_ipv4']
+        dev['loopback_ipv6'] = site_etc['loopback_ipv6']
+    return
+
 class NetworkARM:
     """
     Generate Network AM resources information model.
@@ -42,6 +57,11 @@ class NetworkARM:
         devs = self.nso.devices()
         for dev in devs:
             dev_name = dev['name']
+            re_site = re.findall(r'(\w+)-.+', dev_name)
+            site_name = str.upper(re_site[0])
+            device_type = self._get_device_type(site_name)
+            if device_type and 'cisco' not in device_type.lower():
+                globals()[f"_generate_device_model_{device_type}"](self.sites_metadata[site_name], dev)
             # skip the devices that has no p2p links configured
             if not self._has_p2p_links(dev_name):
                 continue
@@ -84,6 +104,14 @@ class NetworkARM:
             if 'p2p_links' in site_info:
                 return bool(site_info['p2p_links'])
         return False
+
+    def _get_device_type(self, site_name) -> str:
+        if self.sites_metadata and site_name in self.sites_metadata:
+            site_info = self.sites_metadata[site_name]
+            if 'devtype' in site_info['site_etc']:
+                return site_info['site_etc']['devtype']
+        return None
+
 
     def _get_link_type(self, site_name, port_name) -> str:
         if self.sites_metadata and site_name in self.sites_metadata:

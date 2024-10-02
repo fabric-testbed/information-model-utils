@@ -6,7 +6,7 @@ import logging
 import re
 
 # Xilinx Corporation Alveo U280 Golden Image
-FPGA_MODELS = ['Alveo U280']
+FPGA_MODELS = ['Alveo U280', 'Alveo SN1022']
 PORT_REGEX = ".+port ([\\w\\d/]+) .+"
 MAX_PORTS = 8
 
@@ -47,7 +47,7 @@ class FPGA:
                         # -1 means unknown
                         numa = custom_fields.get(field + '_numa_node', '-1')
                         sn = custom_fields[f'fpga{fpga_index}_sn']
-                        usb_id = custom_fields[f'fpga{fpga_index}_usb_device_id']
+                        usb_id = custom_fields.get(f'fpga{fpga_index}_usb_device_id')
                         for i in range(1, MAX_PORTS):
                             # find ports
                             port_string = custom_fields.get(f'fpga{fpga_index}_port_{i}')

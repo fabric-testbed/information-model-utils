@@ -202,12 +202,16 @@ def __add_fpga(node: Node, fpga_name: str, fpga: FPGA, port_map: Dict[str, str])
         interface_node_ids.append(f'{fpga_node_id}-p{port_id}')
         interface_labels.append(Labels(vlan_range='1-4096'))
         port_id += 1
+    if fpga.USB_ID:
+        labels = Labels(bdf=fpga.BDF, usb_id=fpga.USB_ID, numa=fpga.NUMA)
+    else:
+        labels = Labels(bdf=fpga.BDF, numa=fpga.NUMA)
     c = node.add_component(name=node.name + '-' + fpga_name,
                            model=fpga.Model,
                            node_id=fpga_node_id,
                            ctype=ComponentType.FPGA,
                            capacities=Capacities(unit=1),
-                           labels=Labels(bdf=fpga.BDF, usb_id=fpga.USB_ID, numa=fpga.NUMA),
+                           labels=labels,
                            interface_node_ids=interface_node_ids,
                            interface_labels=interface_labels,
                            details=fpga.Description)

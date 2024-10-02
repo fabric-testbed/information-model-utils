@@ -47,7 +47,7 @@ class FPGA:
                         # -1 means unknown
                         numa = custom_fields.get(field + '_numa_node', '-1')
                         sn = custom_fields[f'fpga{fpga_index}_sn']
-                        usb_id = custom_fields[f'fpga{fpga_index}_usb_device_id']
+                        usb_id = custom_fields.get(f'fpga{fpga_index}_usb_device_id')
                         for i in range(1, MAX_PORTS):
                             # find ports
                             port_string = custom_fields.get(f'fpga{fpga_index}_port_{i}')

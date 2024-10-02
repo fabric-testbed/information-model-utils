@@ -211,7 +211,7 @@ def __add_fpga(node: Node, fpga_name: str, fpga: FPGA, port_map: Dict[str, str])
                            node_id=fpga_node_id,
                            ctype=ComponentType.FPGA,
                            capacities=Capacities(unit=1),
-                           labels=Labels(bdf=fpga.BDF, usb_id=fpga.USB_ID, numa=fpga.NUMA),
+                           labels=labels,
                            interface_node_ids=interface_node_ids,
                            interface_labels=interface_labels,
                            details=fpga.Description)

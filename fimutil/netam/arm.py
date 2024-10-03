@@ -16,6 +16,8 @@ def _generate_device_model_ciena_saos10(site_info: dict, dev: dict):
     dev_name = dev['name']
     re_site = re.findall(r'(\w+)-.+', dev_name)
     site_name = str.upper(re_site[0])
+    if 'site_etc' not in site_info:
+        return
     site_etc = site_info['site_etc']
     dev['interfaces'] = []
     if 'ifopts' in site_etc:
@@ -108,7 +110,7 @@ class NetworkARM:
     def _get_device_type(self, site_name) -> str:
         if self.sites_metadata and site_name in self.sites_metadata:
             site_info = self.sites_metadata[site_name]
-            if 'devtype' in site_info['site_etc']:
+            if 'site_etc' in site_info and 'devtype' in site_info['site_etc']:
                 return site_info['site_etc']['devtype']
         return None
 

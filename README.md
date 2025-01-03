@@ -200,7 +200,7 @@ $ generate_instance_flavors.py -o JSONA -f flavors.json
 
 You can use a virtualenv or install directly:
 ```
-$ pip install fimutil
+$ pip install fim-utils
 ```
 
 ### For development

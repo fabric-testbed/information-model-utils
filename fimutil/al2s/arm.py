@@ -8,6 +8,7 @@ from fimutil.al2s.al2s_api import Al2sClient
 from fimutil.al2s.cloud_cfg import REGION_NAME_MAP
 from yaml import load as yload
 from yaml import FullLoader
+import logging
 import os
 import re
 
@@ -87,12 +88,14 @@ class Al2sARM:
             port_nid = f"port+al2s:{port_name}"
             speed_gbps = int(port['capacity'])
             vlan_range = port['vlan_range']
+            if vlan_range == '':
+                logging.warning(f'Port {port_name} has empty vlan range - skip')
+                continue
             # add capabilities
             port_caps = f.Capacities(bw=speed_gbps)
             # add labels
             port_labs = f.Labels(device_name=port['device_name'], local_name=port['interface_name'])
             port_labs = _update_vlan_label(port_labs, vlan_range)
-
             # TODO: identify FABRIC facing interface
             #   Add WAN switch node, network_service and ports with stitch_node=True
             #   Add Links with stitch_node=False

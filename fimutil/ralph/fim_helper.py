@@ -568,9 +568,12 @@ def site_to_fim(site: Site, address: str, config: Dict = None) -> SubstrateTopol
     for d, p4idx in zip(dp_to_p4_ports, range(1, 8 + 1)):
         sp = dp_ns.add_interface(name=d, itype=InterfaceType.TrunkPort,
                                  node_id=dp_port_id(dp.name, d), stitch_node=False)
-        topo.add_link(name='l' + str(link_idx), ltype=LinkType.Patch,
-                           interfaces=[p4.interfaces[f'p{p4idx}'], sp],
-                           node_id=sp.node_id + '-DAC')
+        try:
+            topo.add_link(name='l' + str(link_idx), ltype=LinkType.Patch,
+                               interfaces=[p4.interfaces[f'p{p4idx}'], sp],
+                               node_id=sp.node_id + '-DAC')
+        except KeyError:
+            logging.info(f'P4 is not connected on port p{p4idx}')
         link_idx += 1
 
     return topo

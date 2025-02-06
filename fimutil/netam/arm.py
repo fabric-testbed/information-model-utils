@@ -89,7 +89,7 @@ class NetworkARM:
                         if iface['name'] == isis_iface['name']:
                             is_isis_iface = True
                     # only keep interfaces in up status and of "*GigE0/1/2*" pattern
-                    if re.search('GigE\d/\d/\d|Bundle-Ether\d+', iface['name']):
+                    if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d|Bundle-Ether\d+', iface['name']):
                         iface.pop('statistics', None)  # remove 'statistics' attributes
                         if is_isis_iface:
                             iface['isis'] = True  # mark ISIS interface
@@ -223,8 +223,44 @@ class NetworkARM:
             if 'interfaces' in node:
                 for port in node['interfaces']:
                     port_name = port['name']
+                    if 'phys-address' not in port:
+                        continue
+                    port_mac = port['phys-address']
+                    port_nid = f"port+{node_name}:{port_name}"
+                    speed_gbps = int(int(port['speed']) / 1000000000)
+                    # add capabilities
+                    port_caps = f.Capacities(bw=speed_gbps)
+                    # add labels (vlan ??)
+                    port_labs = f.Labels(local_name=port_name, mac=port_mac)
+                    if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
+                        for ipv6_addr in port['ietf-ip:ipv6']['address']:
+                            ipv6_addr_ip = ipv6_addr['ip']
+                            ipv6_addr_prefix_len = ipv6_addr['prefix-length']
+                            port_labs = f.Labels().update(port_labs, local_name=port_name, ipv6=ipv6_addr_ip)
+                            # only take the first
+                            break
+                    elif regexVlanPort.search(port_name):  # skip if no ipv6 address (it's a slice vlan port)
+                        continue
+                    if 'ietf-ip:ipv4' in port and 'address' in port['ietf-ip:ipv4']:
+                        for ipv4_addr in port['ietf-ip:ipv4']['address']:
+                            ipv4_addr_ip = ipv4_addr['ip']
+                            ipv4_addr_mask = ipv4_addr['netmask']
+                            port_labs = f.Labels().update(port_labs, local_name=port_name, ipv4=ipv4_addr_ip)
+                            port_ipv4net_map[port_nid] = {"site": site_name, "port": port_name,
+                                "ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
+                            # only take the first
+                            break
+                    elif regexVlanPort.search(port_name):  # skip if no ipv4 address (it's a slice vlan port)
+                        continue
+                    sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
+                                             node_id=port_nid, labels=port_labs,
+                                             capacities=port_caps)
+                    if port_nid in port_ipv4net_map:
+                        port_ipv4net_map[port_nid]["interface"] = sp
+                    # add external facility stitching links
+                    # refer to port_name as stitch_port
+
                     # add facility_ports based on stitching metadata
-                    # the metadata refers to port_name as stitch_port
                     if site_info and 'facility_ports' in site_info:
                         for facility_name, stitch_info in site_info['facility_ports'].items():
                             if 'stitch_port' not in stitch_info:
@@ -271,43 +307,7 @@ class NetworkARM:
                                                    ltype=f.LinkType.L2Path,  # could be Patch too
                                                    interfaces=[sp, fac.interface_list[
                                                        0]])  # there is only one interface on the facility
-                    # other port modeling requires an active port in 'up' status
-                    if 'admin-status' not in port or port['admin-status'] != 'up':
-                        continue
-                    if 'phys-address' not in port:
-                        continue
-                    port_mac = port['phys-address']
-                    port_nid = f"port+{node_name}:{port_name}"
-                    speed_gbps = int(int(port['speed']) / 1000000000)
-                    # add capabilities
-                    port_caps = f.Capacities(bw=speed_gbps)
-                    # add labels (vlan ??)
-                    port_labs = f.Labels(local_name=port_name, mac=port_mac)
-                    if 'ietf-ip:ipv6' in port and 'address' in port['ietf-ip:ipv6']:
-                        for ipv6_addr in port['ietf-ip:ipv6']['address']:
-                            ipv6_addr_ip = ipv6_addr['ip']
-                            ipv6_addr_prefix_len = ipv6_addr['prefix-length']
-                            port_labs = f.Labels().update(port_labs, local_name=port_name, ipv6=ipv6_addr_ip)
-                            # only take the first
-                            break
-                    elif regexVlanPort.search(port_name):  # skip if no ipv6 address (it's a slice vlan port)
-                        continue
-                    if 'ietf-ip:ipv4' in port and 'address' in port['ietf-ip:ipv4']:
-                        for ipv4_addr in port['ietf-ip:ipv4']['address']:
-                            ipv4_addr_ip = ipv4_addr['ip']
-                            ipv4_addr_mask = ipv4_addr['netmask']
-                            port_labs = f.Labels().update(port_labs, local_name=port_name, ipv4=ipv4_addr_ip)
-                            port_ipv4net_map[port_nid] = {"site": site_name, "port": port_name,
-                                "ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
-                            # only take the first
-                            break
-                    elif regexVlanPort.search(port_name):  # skip if no ipv4 address (it's a slice vlan port)
-                        continue
-                    sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
-                                             node_id=port_nid, labels=port_labs,
-                                             capacities=port_caps)
-                    if port_nid in port_ipv4net_map:
-                        port_ipv4net_map[port_nid]["interface"] = sp
+
                     # add al2s_ports based on stitching metadata
                     if site_info and 'al2s_ports' in site_info:
                         for al2s_port_name, al2s_stitch_info in site_info['al2s_ports'].items():

@@ -89,7 +89,7 @@ class NetworkARM:
                         if iface['name'] == isis_iface['name']:
                             is_isis_iface = True
                     # only keep interfaces in up status and of "*GigE0/1/2*" pattern
-                    if iface['admin-status'] == 'up' and re.search('GigE\d/\d/\d|Bundle-Ether\d+', iface['name']):
+                    if re.search('GigE\d/\d/\d|Bundle-Ether\d+', iface['name']):
                         iface.pop('statistics', None)  # remove 'statistics' attributes
                         if is_isis_iface:
                             iface['isis'] = True  # mark ISIS interface
@@ -223,6 +223,10 @@ class NetworkARM:
             if 'interfaces' in node:
                 for port in node['interfaces']:
                     port_name = port['name']
+                    if 'admin-status' in port and port ['admin-status'] == 'up':
+                        port_active = True
+                    else:
+                        port_active = False
                     if 'phys-address' not in port:
                         continue
                     port_mac = port['phys-address']
@@ -246,17 +250,20 @@ class NetworkARM:
                             ipv4_addr_ip = ipv4_addr['ip']
                             ipv4_addr_mask = ipv4_addr['netmask']
                             port_labs = f.Labels().update(port_labs, local_name=port_name, ipv4=ipv4_addr_ip)
-                            port_ipv4net_map[port_nid] = {"site": site_name, "port": port_name,
-                                "ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
+                            if port_active:
+                                port_ipv4net_map[port_nid] = {"site": site_name, "port": port_name,
+                                    "ip": ipv4_addr_ip, "netmask": ipv4_addr_mask}
                             # only take the first
                             break
                     elif regexVlanPort.search(port_name):  # skip if no ipv4 address (it's a slice vlan port)
                         continue
-                    sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
-                                             node_id=port_nid, labels=port_labs,
-                                             capacities=port_caps)
-                    if port_nid in port_ipv4net_map:
-                        port_ipv4net_map[port_nid]["interface"] = sp
+                    sp = None
+                    if port_active:
+                        sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
+                                                 node_id=port_nid, labels=port_labs,
+                                                 capacities=port_caps)
+                        if port_nid in port_ipv4net_map:
+                            port_ipv4net_map[port_nid]["interface"] = sp
                     # add external facility stitching links
                     # refer to port_name as stitch_port
 
@@ -302,6 +309,10 @@ class NetworkARM:
                             if 'description' in stitch_info:
                                 fac.interface_list[0].details = stitch_info['description']
                             # connect it to the switch port via link
+                            if not sp:
+                                sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
+                                                         node_id=port_nid, labels=port_labs,
+                                                         capacities=port_caps)
                             self.topology.add_link(name=facility_name + '-link',
                                                    node_id=f'{port_nid}:facility+{facility_name}+link',
                                                    ltype=f.LinkType.L2Path,  # could be Patch too
@@ -323,6 +334,10 @@ class NetworkARM:
                                                     labels=al2s_port_labs, node_id='port+al2s:'+al2s_port_name,
                                                     stitch_node=True)
                             # connect it to the FABRIC port via link
+                            if not sp:
+                                sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
+                                                         node_id=port_nid, labels=port_labs,
+                                                         capacities=port_caps)
                             self.topology.add_link(name=al2s_port_name + '-link',
                                                    node_id=f'{port_nid}:{al2s_port_name}+link',
                                                    ltype=f.LinkType.L2Path,  # could be Patch too

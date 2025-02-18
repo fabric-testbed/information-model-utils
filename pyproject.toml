@@ -3,7 +3,7 @@ requires = ["flit_core >=3.8"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "fim-utils"
+name = "fim_utils"
 authors = [{name = "Ilya Baldin", email = "ibaldin@renci.org"},
            {name = "Xi Yang", email="xiyang@es.net"},
            {name="Hussamuddin Nasir", email="nasir@netlab.uky.edu"}]
@@ -15,8 +15,8 @@ classifiers = ["License :: OSI Approved :: MIT License",
 dynamic = ["version", "description"]
 requires-python = '>=3.9'
 dependencies = [
-	"fabric_fim >= 1.7.2",
-    "pyjq == 2.6.0",
+	"fabric_fim >= 1.8.2",
+        "pyjq == 2.6.0",
 	"jsonpath_ng == 1.5.3",
 	]
 

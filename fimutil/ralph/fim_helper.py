@@ -289,11 +289,30 @@ def __convert_pf_list_to_interface_data(pfs: List[EthernetCardPort]) -> Tuple[Li
     peers = list()
     numas = list()
     slot = None
-    for pf in pfs:
+    for i, pf in enumerate(pfs):
         macs.append(pf.fields['MAC'])
         bdfs.append(pf.fields['BDF'])
         peers.append(pf.fields['Peer_port'])
         numas.append(pf.fields.get('NUMA', '-1'))
+
+        # DMA Controller for BlueField
+        if i == (len(pfs) - 1) and pf.fields.get("Model") and 'BlueField' in pf.fields["Model"]:
+            numas.append(pf.fields["NUMA"])
+            last_bdf = pf.fields["BDF"]
+            # Parse the last BDF into Bus, Device, and Function
+            bus, device_function = last_bdf.split(":")[1:3]
+            device, function = map(int, device_function.split("."))
+            # Determine the next BDF
+            function += 1  # Increment the Function
+            if function > 7:  # If Function exceeds 7, reset and increment Device
+                function = 0
+                device += 1
+                if device > 31:  # If Device exceeds 31, reset and increment Bus
+                    device = 0
+                    bus = hex(int(bus, 16) + 1)[2:].zfill(2)  # Increment Bus and format as hex
+            next_bdf = f"0000:{bus}:{str(device).zfill(2)}.{function}"
+            bdfs.append(next_bdf)
+
         if slot is None:
             slot = pf.fields['Slot']
         else:

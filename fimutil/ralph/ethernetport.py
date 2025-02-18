@@ -36,11 +36,15 @@ class EthernetCardPort(EthernetPort):
     # or
     # "Description: "Intel Corporation I350 Gigabit Network Connection (rev 01) in NIC Port 2 (0000:02:00.1)"
     # "Connection": "Connected to port 7 on uky2-data-sw"
+    # or
+    # "Description": "Mellanox Technologies MT42822 BlueField-2 integrated ConnectX-6 Dx network controller (rev 01)  in PCIe Slot 5 (0000:81:00.0) on NUMA Node 7"
+    # "Connection": "Connected to port HundredGigE0/0/0/15 on renc-data-sw"
     REGEX_FIELDS = {'BDF': ['Description', ".+?\\(([0-9a-f:.]+)\\).*"],
                     'vBDF': ['Description', ".+/\\(([0-9a-f:.]+)\\).*"],
                     'Peer_port': ['Connection', ".+port ([\\w\\d/]+) .+"],
                     'VLAN': ['Connection', ".+ VLAN ([\\d]+) on.+"],
-                    'Model': ['Description', ".+\\[([\\w-]+).*?\\].*"],
+                    'Model': [['Description', ".+\\[([\\w-]+).*?\\].*"],
+                              ['Description', r".*?\b(BlueField-\d+)\b.*?\b(ConnectX-\d+)\b"]],
                     'Slot': ['Description', ".+Slot ([\\d]+) .*"],
                     'NUMA': ['Description', '.+ NUMA Node ([\\+\\-\\d]+).*']}
 

@@ -66,11 +66,21 @@ class RalphAsset(ABC):
         self.populate_fields_from_obj(json_obj=self.raw_json_obj)
         # populate regex fields
         for k, v in self.regex_fields.items():
-            if self.fields[v[0]] is None:
-                continue
-            matches = re.match(v[1], self.fields[v[0]])
-            if matches is not None:
-                self.fields[k] = matches.group(1)
+            if isinstance(v[0], list):
+                for x in v:
+                    if self.fields[x[0]] is None:
+                        continue
+                    matches = re.match(x[1], self.fields[x[0]])
+                    if matches is not None:
+                        matched_result = '-'.join(matches.groups())
+                        self.fields[k] = matched_result
+                        break
+            else:
+                if self.fields[v[0]] is None:
+                    continue
+                matches = re.match(v[1], self.fields[v[0]])
+                if matches is not None:
+                    self.fields[k] = matches.group(1)
 
     def populate_fields_from_obj(self, *, json_obj):
 

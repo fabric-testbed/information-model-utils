@@ -7,6 +7,7 @@ from yaml import load as yload
 from yaml import FullLoader
 from ipaddress import IPv4Interface
 from ipaddress import IPv4Network
+import logging
 
 
 def _in_same_network(ip1: str, ip2: str, netmask: str) -> bool:
@@ -89,6 +90,7 @@ class NetworkARM:
             # skip the devices that explicitly asked to skip
             if dev_name in self.skipped_devices:
                 continue
+            logging.info(f"Fetching {site_name} interfaces from NSO")
             ifaces = self.nso.interfaces(dev_name)
             isis_ifaces = self.nso.isis_interfaces(dev_name)
             if ifaces:
@@ -171,6 +173,7 @@ class NetworkARM:
                 continue
             # add switch node
             node_name = node['name']
+            logging.info(f"Building model for node {node_name}")
             # TODO: get model name from NSO
             model_name = 'NCS 55A1-36H'
             # TODO: get official site name from Ralph (or in switch description string) ?

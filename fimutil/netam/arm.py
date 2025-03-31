@@ -6,10 +6,30 @@ import os
 from yaml import load as yload
 from yaml import FullLoader
 from ipaddress import IPv4Interface
+from ipaddress import IPv4Network
+import logging
 
 
 def _in_same_network(ip1: str, ip2: str, netmask: str) -> bool:
     return IPv4Interface(f'{ip1}/{netmask}').network == IPv4Interface(f'{ip2}/{netmask}').network
+
+
+def _normalize_netmask(prefix: str) -> str:
+    # compatible to prefix string
+    if re.fullmatch(r'(\d+\.\d+\.\d+\.\d+)', prefix):
+        return prefix
+    # compatible to slash format
+    if prefix[0] == '/':
+        prefix_length = int(prefix.lstrip('/'))
+    else:
+        prefix_length = int(prefix)
+    try:
+        if 0 <= prefix_length <= 32:
+            return str(IPv4Network(f'0.0.0.0/{prefix_length}', strict=False).netmask)
+        else:
+            raise ValueError("Prefix length must be between 0 and 32.")
+    except ValueError as e:
+        return f"Invalid input: {e}"
 
 
 def _generate_device_model_ciena_saos10(site_info: dict, dev: dict):
@@ -70,6 +90,7 @@ class NetworkARM:
             # skip the devices that explicitly asked to skip
             if dev_name in self.skipped_devices:
                 continue
+            logging.info(f"Fetching {site_name} interfaces from NSO")
             ifaces = self.nso.interfaces(dev_name)
             isis_ifaces = self.nso.isis_interfaces(dev_name)
             if ifaces:
@@ -152,6 +173,7 @@ class NetworkARM:
                 continue
             # add switch node
             node_name = node['name']
+            logging.info(f"Building model for node {node_name}")
             # TODO: get model name from NSO
             model_name = 'NCS 55A1-36H'
             # TODO: get official site name from Ralph (or in switch description string) ?
@@ -361,6 +383,8 @@ class NetworkARM:
                 has_link = False
                 if self.valid_ipv4_links is None:  # form link if local and remote ipv4 addresses in same subnet
                     port_netmask_r = v_r['netmask']
+                    port_netmask = _normalize_netmask(port_netmask)
+                    port_netmask_r = _normalize_netmask(port_netmask_r)
                     if port_netmask == port_netmask_r and _in_same_network(port_ip, port_ip_r, port_netmask):
                         has_link = True
                 elif f'{port_ip}-{port_ip_r}' in self.valid_ipv4_links:

@@ -136,6 +136,25 @@ class NetworkARM:
         return None
 
 
+    def _get_port_link_cap(self, site_name, port_name) -> dict:
+        ret_cap_dict = {}
+        if self.sites_metadata and site_name in self.sites_metadata:
+            site_info = self.sites_metadata[site_name]
+            if 'p2p_links' in site_info:
+                if ' ' not in port_name:
+                    port_name = port_name.replace("GigE", "GigE ")
+                    port_name = port_name.replace("Bundle-Ether", "Bundle-Ether ")
+                if port_name in site_info['p2p_links']:
+                    port_info = site_info['p2p_links'][port_name]
+                    if 'port-capacity' in port_info:
+                        ret_cap_dict['port-capacity'] = port_info['port-capacity']
+                    if 'link-capacity' in port_info:
+                        ret_cap_dict['link-capacity'] = port_info['link-capacity']
+                    if 'link-reserve-capacity' in port_info:
+                        ret_cap_dict['link-reserve-capacity'] = port_info['link-reserve-capacity']
+        return ret_cap_dict
+
+
     def _get_link_type(self, site_name, port_name) -> str:
         if self.sites_metadata and site_name in self.sites_metadata:
             site_info = self.sites_metadata[site_name]
@@ -150,6 +169,7 @@ class NetworkARM:
         # by default, return `l1path`
         return 'l1path'
 
+
     def build_topology(self) -> None:
         # firstly get SR-PCE active links
         if self.sr_pce is not None:
@@ -159,6 +179,7 @@ class NetworkARM:
         self.topology = f.SubstrateTopology()
         nodes = self._get_device_interfaces()
         port_ipv4net_map = {}
+        port_link_cap_map = {}
 
         # add AL2S abstract switch node and ns
         al2s_node = self.topology.add_node(name='AL2S', site='AL2S',
@@ -253,7 +274,14 @@ class NetworkARM:
                         continue
                     port_mac = port['phys-address']
                     port_nid = f"port+{node_name}:{port_name}"
-                    speed_gbps = int(int(port['speed']) / 1000000000)
+                    # get port/links capacities from site_config SoT file
+                    port_link_cap = self._get_port_link_cap(site_name, port_name)
+                    if port_link_cap:
+                        port_link_cap_map[port_nid] = port_link_cap
+                    if 'port-capacity' in port_link_cap: # we defined
+                        speed_gbps = port_link_cap['port-capacity']
+                    else: # use system default
+                        speed_gbps = int(int(port['speed']) / 1000000000)
                     # add capabilities
                     port_caps = f.Capacities(bw=speed_gbps)
                     # add labels (vlan ??)
@@ -335,9 +363,17 @@ class NetworkARM:
                                 sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
                                                          node_id=port_nid, labels=port_labs,
                                                          capacities=port_caps)
+                            link_caps = None
+                            link_cap_allocs = None
+                            if 'link-capacity' in port_link_cap:
+                                link_caps = f.Capacities(bw=port_link_cap['link-capacity'])
+                                if 'link-reserve-capacity' in port_link_cap:
+                                    link_cap_allocs = f.Capacities(bw=port_link_cap['link-reserve-capacity'])
                             self.topology.add_link(name=facility_name + '-link',
                                                    node_id=f'{port_nid}:facility+{facility_name}+link',
                                                    ltype=f.LinkType.L2Path,  # could be Patch too
+                                                   capacities=link_caps,
+                                                   capacity_allocations=link_cap_allocs,
                                                    interfaces=[sp, fac.interface_list[
                                                        0]])  # there is only one interface on the facility
 
@@ -360,9 +396,17 @@ class NetworkARM:
                                 sp = l2_ns.add_interface(name=port_name, itype=f.InterfaceType.TrunkPort,
                                                          node_id=port_nid, labels=port_labs,
                                                          capacities=port_caps)
+                            link_caps = None
+                            link_cap_allocs = None
+                            if 'link-capacity' in port_link_cap:
+                                link_caps = f.Capacities(bw=port_link_cap['link-capacity'])
+                                if 'link-reserve-capacity' in port_link_cap:
+                                    link_cap_allocs = f.Capacities(bw=port_link_cap['link-reserve-capacity'])
                             self.topology.add_link(name=al2s_port_name + '-link',
                                                    node_id=f'{port_nid}:{al2s_port_name}+link',
                                                    ltype=f.LinkType.L2Path,  # could be Patch too
+                                                   capacities=link_caps,
+                                                   capacity_allocations=link_cap_allocs,
                                                    interfaces=[sp, al2s_sp])
 
         # add FABRIC Testbed internal links
@@ -375,6 +419,14 @@ class NetworkARM:
             port_ip = v['ip']
             port_netmask = v['netmask']
             port_sp = v['interface']
+            link_caps = None
+            link_cap_allocs = None
+            if k in port_link_cap_map:
+                port_link_cap = port_link_cap_map[k]
+                if 'link-capacity' in port_link_cap:
+                    link_caps = f.Capacities(bw=port_link_cap['link-capacity'])
+                    if 'link-reserve-capacity' in port_link_cap:
+                        link_cap_allocs = f.Capacities(bw=port_link_cap['link-reserve-capacity'])
             port_ipv4net_map.pop(k, None)
             # look up paring remote interface
             for k_r in list(port_ipv4net_map):
@@ -404,6 +456,8 @@ class NetworkARM:
                     link = self.topology.add_link(name=f'{port_sp.node_id} to {port_sp_r.node_id}',
                                                   layer=layer,
                                                   ltype=ltype,
+                                                  capacities = link_caps,
+                                                  capacity_allocations = link_cap_allocs,
                                                   interfaces=[port_sp, port_sp_r],
                                                   node_id=link_nid)
 
